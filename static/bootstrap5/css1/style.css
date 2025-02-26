@@ -1,0 +1,107 @@
+
+.btn {
+    padding: 0.55rem 1rem !important;
+}
+
+.siglas-sm span {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+    padding-top: 2px;
+    color: #ffffff;
+    background-color: #1476b8;
+    line-height: 30px;
+    border-radius: 30px;
+    float: left;
+    text-align: center;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.siglas-md span {
+    color: #ffffff;
+    font-size: 20px;
+    padding-top: 5px;
+    width: 40px;
+    height: 40px;
+    background-color: #1476b8;
+    line-height: 30px;
+    border-radius: 30px;
+    float: left;
+    text-align: center;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.siglas-md span:hover {
+    background-color: #1476b8;
+    border: 1px solid rgb(255, 255, 255);
+}
+
+.siglas-md button {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.siglas-md button:hover {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.capitalize {
+    text-transform: capitalize;
+}
+
+td {
+    font-size: 12px;
+}
+
+.select2-container--open .select2-dropdown {
+    z-index: 1070;
+}
+
+.modal-body {
+    overflow-y: auto;
+}
+
+.bg-blue-ep {
+    --bs-bg-opacity: 1;
+    background-color: #032c80 !important
+}
+
+.bg-grey {
+    --bs-bg-opacity: 1;
+    background-color: #f3f3ff !important
+}
+
+.headtitle h3 {
+    margin-bottom: 0px;
+}
+
+.imp-numbermed-right {
+    width: 100px;
+    text-align: right
+}
+
+.swal2-content {
+    font-size: 1.1rem !important;
+}
+
+
+.page-item.active .page-link {
+    background-color: #032c80 !important;;
+    border-color: #034c79;
+    color: #fff;
+    z-index: 3;
+}
+
+/* Menu fijo en cualquier lugar despues de tamaño sm controlado con clase caja-menu por jquery*/
+@media (min-width: 768px) {
+    .caja-menu-flotante {
+        position: sticky;
+        position: -webkit-sticky;
+        /*position:fixed;*/
+        /*z-index: 1000;*/
+        top: 25px;
+    }
+}
