@@ -1,0 +1,95 @@
+{% extends "inventario/adm_productotiendavirtual/basetv.html" %}
+{% load extras %}
+{% block atras %}/{% endblock %}
+{% block extraheading %}
+{% endblock %}
+{% block content %}
+
+    <div class="card mb-3 mt-1">
+        <div class="card-header">
+            <h4 class="mb-0"><b><i class="fa fa-pen-ruler"></i> {{ title }}</b></h4>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="mt-0 pt-0">
+            <div class="col-lg-12 pb-2">
+                <a href="javascript:void(0)" onclick="formModal('','Adicionar Tipo de Especificación','addtipoespecificacion')"
+                   class="btn btn-success"><i class="fa fa-plus"></i> Adicionar Tipo de Especificación</a>
+            </div>
+        </div>
+    </div>
+
+    <form method="GET">
+        <div class="row">
+            <div class="mt-0 pt-0">
+                <input type="hidden" name="action" value="{{ action }}">
+                <div class="col-md-12 col-sm-12">
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" placeholder="Buscar por el nombre de la talla. "
+                               aria-label="Buscar"
+                               aria-describedby="button-addon2" name="s" value="{{ s }}">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit" id="button-addon2"><i
+                                    class="fa fa-search"></i></button>
+                            {% if url_vars %}
+                                <a title="Ver todo" href="{{ request.path }}?action={{ action }}"
+                                   class="btn btn-default tr">
+                                    <i class="fas fa-sync-alt"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card mb-4">
+        <div class="card-body rounded-3">
+            <div class="table-responsive">
+                <table class='tabla_responsive table table-bordered table-striped'>
+                    <thead class="table-light">
+                        <tr>
+                            <th style="text-align: center; width: 1%">N°</th>
+                            <th style="text-align: center;">Atributo</th>
+                            <th style="text-align: center; width: 1%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for l in listado %}
+                        <tr>
+                            <td style="text-align: center;">{{ l.id }}</td>
+                            <td style="text-align: center;">{{ l.atributo }}</td>
+
+                            <td style="text-align: center; width: 5%;">
+                                <a href="javascript:void(0);" class="btn-icon btn btn-ghost btn-sm rounded-circle"
+                                   data-bs-toggle="dropdown" data-offset="-140" aria-haspopup="true"
+                                   aria-expanded="false">
+                                    <i class="fa fa-ellipsis-v" aria-hidden="true"></i></a>
+                                <div class="dropdown-menu" style="">
+                                    <a class="dropdown-item" href="javascript:void(0);"
+                                       onclick="formModal('{{ l.id }}','Editar Tipo Especificacion: {{ l.atributo }}', 'edittipoespecificacion')">
+                                        <i class="fa fa-pen-to-square dropdown-item-icon" aria-hidden="true"></i>
+                                        Editar
+                                    </a>
+
+                                    <a class="dropdown-item" href="javascript:void(0);"
+                                       onclick="eliminarajax('{{ l.id }}','¿REALMENTE DESEAS ELIMINAR: {{ l }}?', 'deltipoespecificacion')">
+                                        <i class="fa fa-close dropdown-item-icon" aria-hidden="true"></i>
+                                        Eliminar
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <td colspan="9" style="text-align: center;">NO EXISTEN TIPOS DE ESPECIFICACIÓN</td>
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% include 'paginacionb4.html' %}
+{% endblock %}

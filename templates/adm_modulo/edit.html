@@ -1,0 +1,19 @@
+{% extends "ajaxformbs.html" %}
+{% block extraheading %}
+    <script type="text/javascript">
+        $(function(){
+            $("#id_nombre").addClass("validate[required]");
+        });
+    </script>
+{% endblock %}
+{% block atras %}/adm_color{% endblock %}
+{% block titulo %}{{ title }}{% endblock %}
+{% block formaction %}/adm_color{% endblock %}
+{% block formdestination %}/adm_color{% endblock %}
+{% block formwidth %}form-l{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='editcolor'/>
+    <input type='hidden' name='id' value='{{ color.id }}'/>
+{% endblock %}
+{% block formback %}/adm_color{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

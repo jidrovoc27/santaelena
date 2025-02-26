@@ -1,0 +1,123 @@
+{% extends "inventario/adm_productotiendavirtual/basetv.html" %}
+{% load extras %}
+{% block atras %}/{% endblock %}
+{% block extraheading %}
+{% endblock %}
+{% block content %}
+
+    <div class="card mb-3 mt-1">
+        <div class="card-header">
+            <h4 class="mb-0"><b><i class="fa fa-cubes"></i> {{ title }}</b></h4>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="mt-0 pt-0">
+            <div class="col-lg-12 pb-2">
+                <a href="javascript:void(0)" onclick="formModal('','Adicionar Producto','add', true)"
+                   class="btn btn-success"><i class="fa fa-plus"></i> Adicionar Producto</a>
+            </div>
+        </div>
+    </div>
+
+    <form method="GET">
+        <div class="row">
+            <div class="mt-0 pt-0">
+                <input type="hidden">
+                <div class="col-md-12 col-sm-12">
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" placeholder="Buscar por nombre de producto."
+                               aria-label="Buscar"
+                               aria-describedby="button-addon2" name="s" value="{{ s }}">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit" id="button-addon2"><i
+                                    class="fa fa-search"></i></button>
+                            {% if url_vars %}
+                                <a title="Ver todo" href="{{ request.path }}?"
+                                   class="btn btn-default tr">
+                                    <i class="fas fa-sync-alt"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card mb-4">
+        <div class="card-body rounded-3">
+            <div class="table-responsive">
+                <table class='tabla_responsive table table-bordered table-striped'>
+                    <thead class="table-light">
+                    <tr>
+                        <th style="text-align: center;">N°</th>
+                        <th style="text-align: center;">Nombre del producto</th>
+                        <th style="text-align: center;">Precio</th>
+                        <th style="text-align: center;">Vigente</th>
+                        <th style="text-align: center;">Stock</th>
+                        <th style="text-align: center;">Total ingresos</th>
+                        <th style="text-align: center;">Total salidas</th>
+                        <th style="text-align: center; width: 5%"></th>
+                    </tr>
+
+                    </thead>
+                    <tbody>
+                    {% for l in listado %}
+                        <tr>
+                            <td style="text-align: center;">{{ forloop.counter }}</td>
+                            <td style="text-align: center;">{{ l.nombre }}</td>
+                            <td style="text-align: center;">{{ l.precio | floatformat:2 }}$</td>
+                            <td style="text-align: center;">
+                                {% if l.vigente %}
+                                    <i class="fa fa-check" style="color: #55ea55"></i>
+                                {% else %}
+                                    <i class="fa fa-close" style="color: #c82829"></i>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">{{ l.stock_total }}</td>
+                            <td style="text-align: center;">{{ l.get_total_ingresos|floatformat:0 }}</td>
+                            <td style="text-align: center;">{{ l.get_total_salidas|floatformat:0 }}</td>
+                            <td style="text-align: center; width: 5%;">
+                                <a href="javascript:void(0);" class="btn-icon btn btn-ghost btn-sm rounded-circle"
+                                   data-bs-toggle="dropdown" data-offset="-140" aria-haspopup="true"
+                                   aria-expanded="false">
+                                    <i class="fa fa-ellipsis-v" aria-hidden="true"></i></a>
+                                <div class="dropdown-menu" style="">
+                                    <a class="dropdown-item"
+                                       href="{{ request.path }}?action=verstock&id={{ l.id }}">
+                                        <i class="fa fa-bars dropdown-item-icon" aria-hidden="true"></i>
+                                        Ver Stock
+                                    </a>
+                                    <a class="dropdown-item"
+                                       href="{{ request.path }}?action=imagenesproducto&id={{ l.id }}">
+                                        <i class="fa fa-image dropdown-item-icon" aria-hidden="true"></i>
+                                        Adicionar Imágenes
+                                    </a>
+                                    <a class="dropdown-item" href="javascript:void(0);"
+                                       onclick="formModal('{{ l.id }}','Editar: {{ l.nombre }}', 'edit', true)">
+                                        <i class="fa fa-pen-to-square dropdown-item-icon" aria-hidden="true"></i>
+                                        Editar
+                                    </a>
+
+                                    <a class="dropdown-item" href="javascript:void(0);"
+                                       onclick="eliminarajax('{{ l.id }}','¿REALMENTE DESEAS ELIMINAR: {{ l }}?', 'del')">
+                                        <i class="fa fa-close dropdown-item-icon" aria-hidden="true"></i>
+                                        Eliminar
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <td colspan="9" style="text-align: center;">NO EXISTEN PRODUCTOS</td>
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+     {% include 'paginacionb4.html' %}
+    </div>
+{% endblock %}

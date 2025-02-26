@@ -1,0 +1,277 @@
+<!-- Navbar -->
+{% load extras %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-sga navbar-fixed-top py-2">
+    <div class="container px-0  px-md-3 justify-content-center">
+        <a class="navbar-brand text-white fw-bold " href="/">
+            <b>SANTA ELENA <a href="javascript:;" class="text-white"
+                   style="font-size: 18px;line-height: 18px;color:white;!important; font-weight: bold" id="clock"></a>
+                &nbsp;&nbsp;</b>
+        </a>
+        {% if not request.user.is_anonymous %}
+            <ul class="navbar-nav navbar-right-wrap ms-auto d-flex nav-top-wrap mt-0 align-items-center">
+                <li style="padding: 4px;" class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white fs-6"
+                       href="#" id="navbarLanding" data-bs-toggle="dropdown" aria-haspopup="true"
+                       aria-expanded="false">
+                        <i class="fas fa-record-vinyl fs-5 d-lg-none"></i> <small> {{ periodo_fiscal.nombre }}</small>
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarLanding">
+                        <li>
+                            <h4 class="dropdown-header">Periodos Fiscales</h4>
+                        </li>
+                        {% for periodo2 in periodos_todos %}
+                            <li><a href='javascript:;' class='dropdown-item periodoselector fs-6'
+                                   pid='{{ periodo2.id|encrypt }}'>
+                                {% if periodo2.id == periodo_fiscal.id %}
+                                    <i class="fa fa-check dropdown-item-icon"></i>
+                                {% endif %}
+                                {{ periodo2.nombre }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                {% if perms.sagest.puede_ver_notificaciones_poliza %}
+                    {% if polizas_por_vencer > 0 %}
+                        <li id="checkpayicon">
+                            <a target="_blank" href="/adm_poliza?type=porvencer"
+                               style="margin-top: 0.9px;"
+                               class="tb nav-link"
+                               title="Pólizas por vencer: {{ polizas_por_vencer }}">
+                                <i class="fas fa-list text-white"></i>
+                                <sup style="top: -10px; left: -3px;"><label
+                                class="badge bg-warning"
+                                style="padding: 4px; font-size: 8px;line-height: 8px;">{{ polizas_por_vencer }}</label></sup>
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endif %}
+                {% if perms.sagest.notificar_pagos_alumnos %}
+                    <li style="padding: 4px;" class="nav-item ">
+                        {% if pagospendientesap %}
+                            <a class="nav-link text-white" href="/fin_comprobantesalumnos?estados=1"
+                               id="navbarAccount"
+                               title="Alerta {{ pagospendientescount }} pagos pendientes de revisión"
+                               data-bs-toggle="tooltip">
+                                <i class="fas fa-list text-white"></i>
+                                {% if pagospendientescount > 0 %}
+                                    <sup style="top: -10px; left: -3px;"><label
+                                            class="badge bg-warning"
+                                            style="padding: 3px; font-size: 8px;line-height: 8px;">{{ pagospendientescount }}</label></sup>
+                                {% endif %}
+                            </a>
+                        {% endif %}
+                        {% if qsincidenciaPedidoAp %}
+                            <li id="checkpayicon">
+                                <a target="_blank" href="/adm_pedidosonline?action=incidencias&estado=1"
+                                   style="margin-top: 0.9px;"
+                                   class="tb nav-link"
+                                   title="Alerta {{ qsincidenciaPedido }} incidencias por atender">
+                                    <i class="fas fa-list text-white"></i>
+                                    {% if qsincidenciaPedido > 0 %}
+                                        <sup style="top: -10px; left: -3px;"><label
+                                                class="badge bg-warning"
+                                                style="padding: 4px; font-size: 8px;line-height: 8px;">{{ qsincidenciaPedido }}</label></sup>
+                                    {% endif %}
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if qsinscritosPagoAp %}
+                            <li id="checkpayicon">
+                                <a target="_blank" href="/rec_carteravencida?revision=1" style="margin-top: 0.9px;"
+                                   class="tb nav-link"
+                                   title="Alerta {{ qsinscritosPago }} inscritos con tentativa de pago alcanzada">
+                                    <i class="fas fa-list text-white"></i>
+                                    {% if qsinscritosPago > 0 %}
+                                        <sup style="top: -10px; left: -3px;"><label
+                                                class="badge bg-warning"
+                                                style="padding: 4px; font-size: 8px;line-height: 8px;">{{ qsinscritosPago }}</label></sup>
+                                    {% endif %}
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if qspedidoOnlineAp %}
+                            <a href="/adm_pedidosonline?estados=1"
+                               class="nav-link text-white"
+                               data-bs-toggle="tooltip"
+                               title="Alerta {{ qspedidoOnline }} pagos online pendientes de revisión">
+                                <i class="fas fa-list text-white"></i>
+                                {% if qspedidoOnline > 0 %}
+                                    <sup style="top: -10px; left: -3px;"><label
+                                            class="badge bg-warning"
+                                            style="padding: 3px; font-size: 8px;line-height: 8px;">{{ qspedidoOnline }}</label></sup>
+                                {% endif %}
+                            </a>
+                        {% endif %}
+                        {% if solicitudes_retiro > 0 %}
+                         <a href="/adm_validacionsolicitud"
+                                   class="nav-link text-white"
+                                   data-bs-toggle="tooltip"
+                                   title="Alerta {{ solicitudes_retiro }} solicitudes de retiro pendientes de validar">
+                                    <i class="fas fa-vote-yea text-white"></i>
+                                    {% if qspedidoOnline > 0 %}
+                                        <sup style="top: -10px; left: -3px;"><label
+                                                class="badge bg-warning"
+                                                style="padding: 3px; font-size: 8px;line-height: 8px;">{{ solicitudes_retiro }}</label></sup>
+                                    {% endif %}
+                                </a>
+                        {% endif %}
+                    </li>
+                {% endif %}
+                {% if persona %}
+                    <li style="padding: -5px;" class="nav-item dropdown">
+                        <a class="btn-icon rounded-circle {% if listnotification %} indicator indicator-primary{% endif %}"
+                           href="#" role="button"
+                           id="dropdownNotificationSecond" data-bs-toggle="dropdown" aria-haspopup="true"
+                           aria-expanded="false">
+                            <i class="fas fa-bell text-white"> </i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg"
+                             aria-labelledby="dropdownNotificationSecond">
+                            <div>
+                                <div class="border-bottom px-3 pb-3 d-flex justify-content-between align-items-center">
+                                    <span class="h5 mb-0">Notificaciones</span>
+                                </div>
+                                <ul class="list-group list-group-flush" style="height: 300px;"
+                                    data-simplebar>
+                                    <div class="simplebar-wrapper" style="margin: 0px;">
+                                        <div class="simplebar-height-auto-observer-wrapper">
+                                            <div class="simplebar-height-auto-observer"></div>
+                                        </div>
+                                        <div class="simplebar-mask">
+                                            <div class="simplebar-offset" style="right: 0px; bottom: 0px;">
+                                                <div class="simplebar-content-wrapper" tabindex="0"
+                                                     role="region"
+                                                     aria-label="scrollable content"
+                                                     style="height: auto; overflow: hidden;">
+                                                    <div class="simplebar-content" style="padding: 0px;">
+                                                        {% for notification in listnotification %}
+                                                            <li class="list-group-item bg-light">
+                                                                <div class="row">
+                                                                    <div class="col">
+                                                                        <a class="text-body viewNotification_b"
+                                                                           _href="{{ notification.url }}"
+                                                                           href="javascript:void(0)"
+                                                                           id="{{ notification.id }}">
+                                                                            <div class="d-flex">
+                                                                                <div class="ms-3">
+                                                                                    <h5 class="fw-bold mb-1">{{ notification.titulo|truncatechars:65 }}</h5>
+                                                                                    <p class="mb-3 text-body">
+                                                                                        {{ notification.cuerpo|truncatechars:100 }}
+                                                                                    </p>
+                                                                                    <span class="fs-6 text-muted">
+                                                                        <span>hace {{ notification.diasingresado }} dias</span>
+{#                                                                                        <span class="ms-1">2:19 PM</span>#}
+                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </a>
+                                                                    </div>
+                                                                    <div class="col-auto text-center me-2">
+
+                                                                        <a _href="{{ notification.url }}"
+                                                                           href="javascript:void(0)"
+                                                                           id="{{ notification.id }}"
+                                                                           class="badge-dot bg-info viewNotification_b"
+                                                                           data-bs-toggle="tooltip"
+                                                                           data-bs-placement="top"
+                                                                           title=""
+                                                                           data-bs-original-title="Marcar como leído">
+                                                                        </a>
+                                                                        {#                                                                    <div>#}
+                                                                        {#                                                                        <a href="#" class="bg-transparent"#}
+                                                                        {#                                                                           data-bs-toggle="tooltip"#}
+                                                                        {#                                                                           data-bs-placement="top" title=""#}
+                                                                        {#                                                                           data-bs-original-title="Remove">#}
+                                                                        {#                                                                            <i class="fe fe-x text-muted"></i>#}
+                                                                        {#                                                                        </a>#}
+                                                                        {#                                                                    </div>#}
+                                                                    </div>
+                                                                </div>
+                                                            </li>
+                                                        {% empty %}
+                                                            <li class="text-center pt-16">
+                                                                <h4 class="text-muted">Sin notificaciones</h4>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="simplebar-placeholder"
+                                             style="width: 0px; height: 0px;"></div>
+                                    </div>
+
+                                </ul>
+                                <div class="border-top px-3 pt-3 pb-0 text-center">
+                                    <a href="/notificacion" class="text-link fw-semi-bold bloqueo_pantalla">
+                                        <i class="fas fa-bell"></i> Ver todas mis notificaciones</a>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="dropdown ms-2" style="padding: 4px;">
+                        <a class="rounded-circle" href="#" role="button" id="panelPerfilUsuario"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false">
+                            <div class="avatar avatar-md" style="height: 100%; width: 100%;">
+                                <img alt="avatar" src="{{ persona.get_foto }}" class="rounded-circle"
+                                     style="width: 34px;margin-top: -1px;">
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs"
+                             aria-labelledby="panelPerfilUsuario">
+                            <div class="dropdown-item">
+                                <div class="d-flex">
+                                    <div class="avatar avatar-md ">
+                                        <img alt="avatar" src="{{ persona.get_foto }}" class="rounded-circle" style="width: 37px">
+                                    </div>
+                                    <div class="ms-3 lh-1">
+                                        <h5 class="mb-1">{{ persona|title }}</h5>
+                                        <p class="mb-0 text-muted">{{ persona.perfilusuario_administrativo|title }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <ul class="list-unstyled">
+{#                                <li><a href="/pass" class="dropdown-item bloqueo_pantalla">#}
+{#                                    <i class="fe fe-lock"></i>&nbsp;Cambiar contraseña</a></li>#}
+{#                                </li>#}
+                                {% if request.user.is_superuser %}
+                                    <li><a href="/adminepunemi" target="_blank"
+                                           class="dropdown-item"><i class="fa fa-cogs"></i> &nbsp;
+                                        Administrar
+                                        Django</a></li>
+                                {% endif %}
+                            </ul>
+                            <div class="dropdown-divider"></div>
+                            <ul class="list-unstyled" style="font-size: 12px;">
+                                {% for perfil in perfiles_usuario %}
+                                    {% if perfil.activo %}
+                                        <li class="dropdown-item {% if perfilprincipal.id == perfil.id %}active{% endif %}">
+                                            <a {% if perfilprincipal.id == perfil.id %} href='javascript:;' {% else %}
+                                                                                        href='/cudu?id={{ perfil.id|encrypt }}'
+                                                                                        class="dropdown-item bloqueo_pantalla" {% endif %}>
+                                                {% if perfilprincipal.id == perfil.id %}
+                                                    <i class="fa fa-check-circle text-warning"></i>&nbsp;{% endif %}{{ perfil.tipo }}
+                                                    {% if persona.sexo_id == 1 and perfil.tipo == 'PROFESOR' %}
+                                                        A{% endif %}
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                            <div class="dropdown-divider"></div>
+                            <ul style="text-align: center" class="list-unstyled">
+                                <li>
+                                    <a class="dropdown-item logoutuser" href="/logoutclinica">
+                                        <i class="fas fa-power-off"></i>&nbsp;Cerrar sesión
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                {% endif %}
+            </ul>
+        {% endif %}
+    </div>
+</nav>

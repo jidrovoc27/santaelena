@@ -1,0 +1,551 @@
+{% extends "base_system.html" %}
+{% load static %}
+{% block  heading %}
+    <script type="text/javascript" src="/static/js/jquery.fancybox.pack.js?v=1.0.0"></script>
+    <link rel="stylesheet" href="/static/css/jquery.fancybox.css?v=1.0.0" type="text/css" media="screen" />
+    <script src='https://www.google.com/recaptcha/api.js'></script>
+    <link rel="stylesheet" href="/static/css/captcha/chaptcha_response.css" type="text/css" media="screen"/>
+
+    <script type="text/javascript">
+
+        $(document).ready(function() {
+            $(".fancybox").attr('rel', 'gallery').fancybox({padding : 0, autoScale: true, transitionIn: 'fade', transitionOut: 'fade'});
+            $("#noticiagrafica").fancybox().trigger('click');
+        });
+
+        $(function() {
+
+            $("#username").focus();
+
+            clienteinfo = function(window) {
+                {
+                    var unknown = '-';
+
+                    // screen
+                    var screenSize = '';
+                    if (screen.width) {
+                        width = (screen.width) ? screen.width : '';
+                        height = (screen.height) ? screen.height : '';
+                        screenSize += '' + width + " x " + height;
+                    }
+
+                    // browser
+                    var nVer = navigator.appVersion;
+                    var nAgt = navigator.userAgent;
+                    var browser = navigator.appName;
+                    var version = '' + parseFloat(navigator.appVersion);
+                    var majorVersion = parseInt(navigator.appVersion, 10);
+                    var nameOffset, verOffset, ix;
+
+                    // Opera
+                    if ((verOffset = nAgt.indexOf('Opera')) != -1) {
+                        browser = 'Opera';
+                        version = nAgt.substring(verOffset + 6);
+                        if ((verOffset = nAgt.indexOf('Version')) != -1) {
+                            version = nAgt.substring(verOffset + 8);
+                        }
+                    }
+                    // Opera Next
+                    if ((verOffset = nAgt.indexOf('OPR')) != -1) {
+                        browser = 'Opera';
+                        version = nAgt.substring(verOffset + 4);
+                    }
+                    // MSIE
+                    else if ((verOffset = nAgt.indexOf('MSIE')) != -1) {
+                        browser = 'Microsoft Internet Explorer';
+                        version = nAgt.substring(verOffset + 5);
+                    }
+                    // Chrome
+                    else if ((verOffset = nAgt.indexOf('Chrome')) != -1) {
+                        browser = 'Chrome';
+                        version = nAgt.substring(verOffset + 7);
+                    }
+                    // Safari
+                    else if ((verOffset = nAgt.indexOf('Safari')) != -1) {
+                        browser = 'Safari';
+                        version = nAgt.substring(verOffset + 7);
+                        if ((verOffset = nAgt.indexOf('Version')) != -1) {
+                            version = nAgt.substring(verOffset + 8);
+                        }
+                    }
+                    // Firefox
+                    else if ((verOffset = nAgt.indexOf('Firefox')) != -1) {
+                        browser = 'Firefox';
+                        version = nAgt.substring(verOffset + 8);
+                    }
+                    // MSIE 11+
+                    else if (nAgt.indexOf('Trident/') != -1) {
+                        browser = 'Microsoft Internet Explorer';
+                        version = nAgt.substring(nAgt.indexOf('rv:') + 3);
+                    }
+                    // Other browsers
+                    else if ((nameOffset = nAgt.lastIndexOf(' ') + 1) < (verOffset = nAgt.lastIndexOf('/'))) {
+                        browser = nAgt.substring(nameOffset, verOffset);
+                        version = nAgt.substring(verOffset + 1);
+                        if (browser.toLowerCase() == browser.toUpperCase()) {
+                            browser = navigator.appName;
+                        }
+                    }
+                    // trim the version string
+                    if ((ix = version.indexOf(';')) != -1) version = version.substring(0, ix);
+                    if ((ix = version.indexOf(' ')) != -1) version = version.substring(0, ix);
+                    if ((ix = version.indexOf(')')) != -1) version = version.substring(0, ix);
+
+                    majorVersion = parseInt('' + version, 10);
+                    if (isNaN(majorVersion)) {
+                        version = '' + parseFloat(navigator.appVersion);
+                        majorVersion = parseInt(navigator.appVersion, 10);
+                    }
+
+                    // mobile version
+                    var mobile = /Mobile|mini|Fennec|Android|iP(ad|od|hone)/.test(nVer);
+
+                    // cookie
+                    var cookieEnabled = (navigator.cookieEnabled) ? true : false;
+
+                    if (typeof navigator.cookieEnabled == 'undefined' && !cookieEnabled) {
+                        document.cookie = 'testcookie';
+                        cookieEnabled = (document.cookie.indexOf('testcookie') != -1) ? true : false;
+                    }
+
+                    // system
+                    var os = unknown;
+                    var clientStrings = [
+                        {s:'Windows 10', r:/(Windows 10.0|Windows NT 10.0)/},
+                        {s:'Windows 8.1', r:/(Windows 8.1|Windows NT 6.3)/},
+                        {s:'Windows 8', r:/(Windows 8|Windows NT 6.2)/},
+                        {s:'Windows 7', r:/(Windows 7|Windows NT 6.1)/},
+                        {s:'Windows Vista', r:/Windows NT 6.0/},
+                        {s:'Windows Server 2003', r:/Windows NT 5.2/},
+                        {s:'Windows XP', r:/(Windows NT 5.1|Windows XP)/},
+                        {s:'Windows 2000', r:/(Windows NT 5.0|Windows 2000)/},
+                        {s:'Windows ME', r:/(Win 9x 4.90|Windows ME)/},
+                        {s:'Windows 98', r:/(Windows 98|Win98)/},
+                        {s:'Windows 95', r:/(Windows 95|Win95|Windows_95)/},
+                        {s:'Windows NT 4.0', r:/(Windows NT 4.0|WinNT4.0|WinNT|Windows NT)/},
+                        {s:'Windows CE', r:/Windows CE/},
+                        {s:'Windows 3.11', r:/Win16/},
+                        {s:'Android', r:/Android/},
+                        {s:'Open BSD', r:/OpenBSD/},
+                        {s:'Sun OS', r:/SunOS/},
+                        {s:'Linux', r:/(Linux|X11)/},
+                        {s:'iOS', r:/(iPhone|iPad|iPod)/},
+                        {s:'Mac OS X', r:/Mac OS X/},
+                        {s:'Mac OS', r:/(MacPPC|MacIntel|Mac_PowerPC|Macintosh)/},
+                        {s:'QNX', r:/QNX/},
+                        {s:'UNIX', r:/UNIX/},
+                        {s:'BeOS', r:/BeOS/},
+                        {s:'OS/2', r:/OS\/2/},
+                        {s:'Search Bot', r:/(nuhk|Googlebot|Yammybot|Openbot|Slurp|MSNBot|Ask Jeeves\/Teoma|ia_archiver)/}
+                    ];
+                    for (var id in clientStrings) {
+                        var cs = clientStrings[id];
+                        if (cs.r.test(nAgt)) {
+                            os = cs.s;
+                            break;
+                        }
+                    }
+
+                    var osVersion = unknown;
+
+                    if (/Windows/.test(os)) {
+                        osVersion = /Windows (.*)/.exec(os)[1];
+                        os = 'Windows';
+                    }
+
+                    switch (os) {
+                        case 'Mac OS X':
+                            osVersion = /Mac OS X (10[\.\_\d]+)/.exec(nAgt)[1];
+                            break;
+
+                        case 'Android':
+                            osVersion = /Android ([\.\_\d]+)/.exec(nAgt)[1];
+                            break;
+
+                        case 'iOS':
+                            osVersion = /OS (\d+)_(\d+)_?(\d+)?/.exec(nVer);
+                            osVersion = osVersion[1] + '.' + osVersion[2] + '.' + (osVersion[3] | 0);
+                            break;
+                    }
+
+                    // flash (you'll need to include swfobject)
+                    /* script src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js" */
+                    var flashVersion = 'no check';
+                    if (typeof swfobject != 'undefined') {
+                        var fv = swfobject.getFlashPlayerVersion();
+                        if (fv.major > 0) {
+                            flashVersion = fv.major + '.' + fv.minor + ' r' + fv.release;
+                        }
+                        else  {
+                            flashVersion = unknown;
+                        }
+                    }
+                }
+
+                window.jscd = {
+                    screen: screenSize,
+                    browser: browser,
+                    browserVersion: version,
+                    browserMajorVersion: majorVersion,
+                    mobile: mobile,
+                    os: os,
+                    osVersion: osVersion,
+                    cookies: cookieEnabled,
+                    flashVersion: flashVersion
+                };
+            };
+
+            clienteinfo(window);
+
+            var navegador = jscd.browser +' '+ jscd.browserMajorVersion;
+            var os =  jscd.os +' '+ jscd.osVersion;
+            var cookies = jscd.cookies;
+            var screensize = jscd.screen;
+
+            $("#user").blur(function(){
+                $(this).val($(this).val().trim());
+            });
+
+            $("#pass, #user").keydown(function(){
+                $("#errormensaje").hide();
+            });
+
+
+            $("#login").click(function(){
+                login();
+            });
+
+            $("#aceptar").click(function(){
+                declaracion();
+            });
+
+
+            $("#recuperar").click(function(){
+                $("#loginform").hide();
+                $("#success").hide();
+                $("#recuperarform").show();
+                $(".ini").show();
+            });
+
+            $(".ini,.fin").click(function(){
+                $("#datos").val("");
+                $("#recuperarform").hide();
+                $("#tabla").hide();
+                $("#errorb").hide();
+                $("#success").hide();
+                $("#loginform").show();
+            });
+
+            buscar = function(){
+                var busqueda = $("#datos").val();
+                $("#errorb").hide();
+                $("#success").hide();
+                if (busqueda.trim().length > 0) {
+                    bloqueointerface();
+                    $.ajax({
+                        type: "POST",
+                        url: "/datos",
+                        data: {"action": "busqueda", "busqueda": busqueda},
+                        success: function (data) {
+                            $.unblockUI();
+                            if (data.result == "ok") {
+                                $("#tabla").show();
+                                $(".ini").hide();
+                                $("#tablacontenido").html("<tr><td style='width: 300px'> Usuario registrado </td></tr>");
+                                if (data.permisoboton == "0") {
+                                    $("#generar").hide();
+                                }
+                                else {
+                                    $("#generar").show();
+                                }
+
+                            } else {
+                                $("#tabla").hide();
+                                $(".ini").show();
+                                $("#errorb").html(data.mensaje).show();
+                            }
+                        },
+                        error: function(){
+                            $.unblockUI();
+                            $("#tabla").hide();
+                            $("#errorb").html('No se pudo realizar la consulta').show();
+                        },
+                        dataType:"json"
+                    });
+                } else {
+                    $("#datos").focus();
+                }
+            };
+
+            $("#busqueda").click(function(){
+                buscar();
+{#                $(".fin").hide();#}
+            });
+
+            $("#cambioclave").click(function(){
+                var usuario = $("#datos").val();
+                $(".ini").show();
+
+                $("#errorb,#success").hide();
+                if (usuario.trim().length > 0) {
+                    bloqueointerface();
+                    $.ajax({
+                        type: "POST",
+                        url: "/datos",
+                        data: {"action": "generarnuevaclave", "usuario": usuario},
+                        success: function (data) {
+                            $.unblockUI();
+                            if (data.result == "ok") {
+                                $("#success").html('Revise su correo institucional para completar la solicitud.').show();
+                                $("#tabla").hide();
+                            } else {
+                                $("#errorb").html('Error al enviar la solicitud.').show();
+                            }
+                        },
+                        error: function(){
+                            $.unblockUI();
+
+                            smoke.alert("Error al enviar la solicitud.");
+                        },
+                        dataType:"json"
+                    });
+                } else {
+                    $("#datos").focus();
+                }
+
+            });
+
+            $(".tl").tooltip({position:"center up"});
+
+            login = function(){
+                var usuario = $("#user").val();
+                if (usuario.length == 0){
+                    $("#user").focus();
+                    return false;
+                }
+                var clave = $("#pass").val();
+                if (clave.length == 0){
+                    $("#pass").focus();
+                    return false;
+                }
+                var captcha='';
+                $("#login").attr({"disabled": "disabled"});
+                $.ajax({
+                    type: "POST",
+                    url: "/loginclinica",
+                    data: {
+                        'action': 'login',
+                        'navegador': navegador,
+                        'os': os,
+                        'cookies': cookies,
+                        'screensize': screensize,
+                        'user': usuario,
+                        'pass': clave,
+                    },
+
+                    success: function (data) {
+                        if (data.result == 'ok') {
+                            localStorage.clear();
+                            localStorage.setItem('sessionid', data.sessionid);
+                            window.name = data.sessionid;
+                            location.href = "/loginclinica";
+                        } else {
+                            $("#loginform").show();
+                            $("#declaracionform").hide();
+                            $("#login").removeAttr('disabled');
+                            $("#errormensaje").html(data.mensaje).show();
+                        }
+                    },
+                    error: function () {
+                        alert("error")
+                        $("#login").removeAttr('disabled');
+                        $("#errormensaje").html('Error al enviar los datos').show();
+                    },
+                    dataType: "json"
+                });
+            };
+
+            $("#logindeclaracion1").click(function(){
+                bloqueointerface();
+                var usuario = $("#userdeclaracion").val();
+                if (usuario.length == 0){
+                    $("#userdeclaracion").focus();
+                    return false;
+                }
+                var clave = $("#passdeclaracion").val();
+                if (clave.length == 0){
+                    $("#passdeclaracion").focus();
+                    return false;
+                }
+                var captcha='';
+                {% if validar_con_captcha %}
+                    captcha= $("#g-recaptcha-response").val();
+                {% endif %}
+                if($("#acepto").prop('checked')) {
+                    $("#login").attr({"disabled": "disabled"});
+                    $.ajax({
+                        type: "POST",
+                        url: "/loginsga",
+                        data: {
+                            'action': 'login',
+                            'navegador': navegador,
+                            'os': os,
+                            'cookies': cookies,
+                            'screensize': screensize,
+                            'user': usuario,
+                            'pass': clave,
+                            'g-recaptcha-response': captcha
+                        },
+                        success: function (data) {
+                            if (data.result == 'ok') {
+                                localStorage.clear();
+                                localStorage.setItem('sessionid', data.sessionid);
+                                window.name = data.sessionid;
+                                location.href = "/loginsga";
+                            } else {
+                                $.unblockUI();
+                                $("#loginform").show();
+                                $("#declaracionform").hide();
+                                $("#login").removeAttr('disabled');
+                                $("#errormensaje").html(data.mensaje).show();
+                                grecaptcha.reset();
+                            }
+                        },
+                        error: function () {
+                            $.unblockUI();
+                            $("#login").removeAttr('disabled');
+                            $("#errormensaje").html('Error al enviar los datos').show();
+                            grecaptcha.reset();
+                        },
+                        dataType: "json"
+                    });
+                }
+                else
+                {
+                    $.unblockUI();
+                    smoke.alert("Debe Aceptar para poder continuar.");
+                }
+
+            });
+
+{#            $('#user, #pass').keyup(function(e) {#}
+{#                if(e.keyCode == 13) {#}
+{#                    login();#}
+{#                }#}
+{#            });#}
+
+            $('#userdeclaracion, #passdeclaracion').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    logindeclaracion();
+                }
+            });
+
+            $('#datos').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    buscar();
+                }
+            });
+
+            $(".fancybox").eq(0).trigger('click');
+
+            logindeclaracion = function () {
+                $("#acepto").attr("checked", false);
+                var usuario = $("#userdeclaracion").val();
+                if (usuario.length == 0){
+                    $("#userdeclaracion").focus();
+                    return false;
+                }
+                var clave = $("#passdeclaracion").val();
+                if (clave.length == 0){
+                    $("#passdeclaracion").focus();
+                    return false;
+                }
+                $("#loginform").hide();
+                $("#declaracionform").show();
+
+            };
+
+            $("#logindeclaracion").click(function(){
+                logindeclaracion();
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block containertype %}
+{% endblock %}
+{% block contentextraclass %}bg{{ background }}{% endblock %}
+{% block pagetitle %}Inicio de Sesion{% endblock %}
+{% block canvas %}
+    {% for noticia in noticiasgraficas %}
+        <img src="{{ noticia.imagen.download_link }}" class="fancybox" id="noticiagrafica">
+    {% endfor %}
+    <div id="maincontent" class="row">
+        <div class='span8'>
+            {% for noticia in noticias %}
+                {% if noticia.tipo == 1%}
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">{{ noticia.titular }}</h4>
+                    {{ noticia.cuerpo|safe }}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <div class="span4">
+            <!-- FORM PARA LOS USUARIOS DEL CENTRO -->
+            <div class="well" id='loginform'>
+                <h3>Iniciar sesión</h3>
+                <div class="alert alert-error" id="errormensaje" hidden="hidden" style="display: none"></div>
+                <fieldset>
+                    <label>Usuario</label>
+                    {% if declaracion_sga %}
+                        <input type='text' id='userdeclaracion' style="text-transform: none;" class='input-block-level' id="username"/>
+                    {% else %}
+                        <input type='text' id='user' style="text-transform: none;" class='input-block-level' id="username"/>
+                    {% endif %}
+                    <label>Contraseña</label>
+                    {% if declaracion_sga %}
+                        <input type='password' id='passdeclaracion'  style="text-transform: none;"  class='input-block-level'/>
+                    {% else %}
+                        <input type='password' id='pass'  style="text-transform: none;"  class='input-block-level'/>
+                    {% endif %}
+                </fieldset>
+                <fieldset {% if not validar_con_captcha %}style="margin-top: 10px;"{% endif %}>
+                    <a  href="javascript:;" id="login" class="btn btn-success"><i class="fa fa-arrow-right "></i> Entrar</a>
+                </fieldset>
+                <p style="margin-top: 15px">En caso de problemas, contactar al <a href="mailto:john_idrovo_16@outlook.com">administrador.</a></p>
+{#                <p style="margin-top: -10px"><a href="javascript:;" id="recuperar">¿Has olvidado los datos de la cuenta?</a>.</p>#}
+            </div>
+
+            <div class="well" id='recuperarform' style="display: none">
+                <fieldset class="control-group nomargins">
+                    <label class="control-label">Introduce el número de cédula para validar tu cuenta:</label>
+                    <div class="controls">
+                        <input type='text' id='datos' style="text-transform: none; width: auto; max-width: 275px;" class='input-block-level' id="username"/>
+                        <a class="btn btn-info" href="javascript:;" id="busqueda"><i class="fa fa-search"></i></a>
+                    </div>
+                </fieldset><br>
+                <div class="alert alert-error" id="errorb" hidden="hidden"></div>
+                <div class="alert alert-success" id="success" hidden="hidden"></div>
+                <div class="col-lg-9" >
+                    <div class="row-fluid" style="margin-top: 20px; text-align: left" hidden="hidden" id="tabla">
+                        <table class="table table-bordered">
+                            <tbody id="tablacontenido">
+                            </tbody>
+                        </table>
+                        <tabla id="generar" style="margin-left: auto">
+                            <a class="btn btn-success tu" title="Solicitud de nueva contraseña será enviada a su correo institucional." href="javascript:;" id="cambioclave"><i class="fa fa-lock"></i>Restablecer contraseña</a>
+                            <a class="btn btn-primary tu fin" href="javascript:;" id="ingresar"><i class="fa fa-window-close-o"></i> Cancelar</a>
+                        </tabla>
+                    </div>
+                    <div  style=" margin-top: 20px;text-align: right">
+                        <a class="btn btn-primary tu ini" href="javascript:;" id="ingresar"><i class="fa fa-window-close-o"></i> Cancelar</a>
+                    </div>
+                </div>
+                <a class="btn btn-warning"  href="http://sga.unemi.edu.ec/media/restablecer_cuenta.pdf" target="_blank"> <i class="fa fa-download"></i> Manual de Usuario </a>
+            </div>
+            <div style="text-align: right;">
+            </div>
+        </div>
+    </div>
+{% endblock %}

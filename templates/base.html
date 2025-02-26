@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="shortcut icon" type="image/x-icon" href="/static/tiendavirtual/logo/logo_color.png">
+
+    <!-- Mirrored from codescandy.com/geeks-bootstrap-5/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 17 May 2022 19:20:36 GMT -->
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+{#    <meta name="description"#}
+{#          content="Geeks is a fully responsive and yet modern premium bootstrap 5 template & snippets. Geek is feature-rich components and beautifully designed pages that help you create the best possible website and web application projects. Bootstrap Snippet "/>#}
+{#    <meta name="keywords"#}
+{#          content="Geeks UI, bootstrap, bootstrap 5, Course, Sass, landing, Marketing, admin themes, bootstrap admin, bootstrap dashboard, ui kit, web app, multipurpose"/>#}
+
+    {% load static %}
+    <!-- Favicon icon-->
+{#    <link rel="shortcut icon" type="image/x-icon"#}
+{#          href="{% static "tiendavirtual/assets/images/favicon/favicon.ico" %}"/>#}
+
+
+    <link href="{% static "tiendavirtual/assets/fonts/feather/feather.css" %}" rel="stylesheet" type="text/css"/>
+    <link href="{% static "tiendavirtual/assets/libs/bootstrap-icons/font/bootstrap-icons.css" %}" rel="stylesheet"/>
+    <link href="{% static "tiendavirtual/assets/libs/dragula/dist/dragula.min.css" %}" rel="stylesheet"/>
+
+    <link href="{% static "tiendavirtual/assets/libs/dropzone/dist/dropzone.css" %}" rel="stylesheet"/>
+    <link href="{% static "tiendavirtual/assets/libs/magnific-popup/dist/magnific-popup.css" %}" rel="stylesheet"/>
+    <link href="{% static "tiendavirtual/assets/libs/bootstrap-select/dist/css/bootstrap-select.min.css" %}"
+          rel="stylesheet">
+    <link href="{% static "tiendavirtual/assets/libs/tiny-slider/dist/tiny-slider.css" %}" rel="stylesheet">
+
+    <link href="{% static "tiendavirtual/assets/libs/datatables.net-bs5/css/dataTables.bootstrap5.min.css" %}"
+          rel="stylesheet">
+    <link href="{% static "tiendavirtual/assets/libs/prismjs/themes/prism-okaidia.min.css" %}" rel="stylesheet">
+    <link href="{% static "tiendavirtual/assets/libs/simplebar/dist/simplebar.min.css" %}" rel="stylesheet">
+    <link href="{% static "tiendavirtual/assets/libs/nouislider/dist/nouislider.min.css" %}" rel="stylesheet">
+    <link href="{% static "tiendavirtual/assets/libs/glightbox/dist/css/glightbox.min.css" %}" rel="stylesheet">
+{#    <link href="{% static "/pdf.min.css" %}" rel="stylesheet">#}
+    <link href="/static/sweet2/sweetalert2.css?1.0.2" rel="stylesheet"/>
+    <script src="/static/sweet2/sweetalert2.js?1.0.0"></script>
+
+    <link rel="stylesheet" href="{% static "tiendavirtual/assets/css/theme.min.css" %}">
+    <script type='text/javascript' src="/static/js/jquery.min.js?1.0.0"></script>
+
+    <script type='text/javascript' src="static/bootstrap5/js/utils.js"></script>
+    <script type='text/javascript' src="static/bootstrap5/css/style.css"></script>
+{#    <script type='text/javascript' src="static/bootstrap5/js/validators.css"></script>#}
+
+    <title>{{ title }}</title>
+
+    <style>
+        /*COLOR PRINCIPAL*/
+        .btn-tienda{
+            background: #0B2E44 ;
+            color: white;
+        }
+
+        .nav-link {
+            color: white !important;
+        }
+
+        /*BOTON LOGIN*/
+        .btn-login {
+            background: #e68a2f;
+            border: 0 none;
+            color: white;
+            padding: 10px 25px 10px 25px;
+            border-radius: 10px;
+        }
+
+        .btn-login:hover {
+            background: #f77618;
+        }
+
+        /*TITULO LOGIN*/
+        .title-login {
+            color: #e68a2f;
+        }
+    </style>
+    <style>
+        .footer {
+            background-color: #0B2E44;
+            color: #ffffff;
+            padding: 40px 0;
+        }
+
+        .footer h4 {
+            font-size: 18px;
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .footer p, .footer ul {
+            font-size: 14px;
+            color: #bdc3c7;
+        }
+
+        .footer ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .footer ul li {
+            margin-bottom: 10px;
+        }
+
+        .footer ul.footer-links li a {
+            color: #bdc3c7;
+            text-decoration: none;
+        }
+
+        .footer ul.footer-links li a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+
+        .footer ul.footer-contact li {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .footer ul.footer-contact li i {
+            margin-right: 10px;
+        }
+
+        .social-links a {
+            color: #ffffff;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .social-links a:hover {
+            color: #1abc9c;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .footer-bottom p {
+            color: #bdc3c7;
+        }
+
+    </style>
+    {% block estiloextra %}
+    {% endblock %}
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg navbar-default" style="background: #0B2E44">
+    <div class="container-fluid px-0">
+        <a class="navbar-brand" href="/">
+            <img src="{% static "tiendavirtual/img/ep_blanco_letras.png" %}" alt=""/>
+        </a>
+
+        <!-- Mobile view nav wrap -->
+        <ul class="navbar-nav navbar-right-wrap ms-auto d-lg-none d-flex nav-top-wrap">
+            <li class="dropdown stopevent">
+                <a class="btn btn-light btn-icon rounded-circle text-muted" href="/detail?action=showcart">
+                    <i class="fe fe-shopping-cart"> </i>
+                </a>
+            </li>
+            {% if request.user.is_authenticated %}
+                <li class="dropdown ms-2">
+                    <a class="rounded-circle" href="#" role="button" data-bs-toggle="dropdown">
+                        <div class="avatar avatar-md avatar-indicators avatar-online">
+                            <img alt="avatar" src="{{ persona_.get_foto }}" class="rounded-circle"/>
+                        </div>
+                    </a>
+                    {% include 'submenu_perfil.html' %}
+                </li>
+            {% else %}
+                {% if request.path != '/loginclinica' %}
+                    <li class="dropdown ms-2 d-inline-block">
+                        <a href="/loginclinica" class="btn btn-white"><i class="fe fe-log-in"></i> Iniciar Sesión</a>
+                    </li>
+                {% endif %}
+            {% endif %}
+        </ul>
+
+        <!-- Button -->
+        <button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-default"
+                aria-controls="navbar-default" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="icon-bar top-bar mt-0"></span>
+            <span class="icon-bar middle-bar"></span>
+            <span class="icon-bar bottom-bar"></span>
+        </button>
+
+        <!-- Collapse -->
+        <div class="collapse navbar-collapse" id="navbar-default" style="color:white">
+            <ul class="navbar-nav">
+                <!-- Nav links -->
+                <li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
+                <li class="nav-item"><a class="nav-link" href="/productos">Productos</a></li>
+                <li class="nav-item"><a class="nav-link" href="/ofertas">Ofertas</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contactanos">Contacto</a></li>
+            </ul>
+            <ul class="navbar-nav navbar-right-wrap ms-auto d-none d-lg-block">
+                <li class="dropdown d-inline-block stopevent">
+                    <a class="btn btn-light btn-icon rounded-circle text-muted" href="/detail?action=showcart">
+                        <i class="fe fe-shopping-cart" style="color: #0B2E44"></i>
+                    </a>
+                </li>
+                {% if request.user.is_authenticated %}
+                    <li class="dropdown ms-2 d-inline-block">
+                        <a class="rounded-circle" href="#" data-bs-toggle="dropdown">
+                            <div class="avatar avatar-md avatar-indicators avatar-online">
+                                <img alt="avatar" src="{{ persona_.get_foto }}" class="rounded-circle"/>
+                            </div>
+                        </a>
+                        {% include 'submenu_perfil.html' %}
+                    </li>
+                {% else %}
+                    {% if request.path != '/loginclinica' %}
+                        <li class="dropdown ms-2 d-inline-block">
+                            <a href="/loginclinica" class="btn btn-white" ><i class="fe fe-log-in"></i> Iniciar Sesión</a>
+                        </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+{% block contenido %}
+{% endblock %}
+
+<div style="background: #E68A2F;height: 1vh"></div>
+<footer class="footer">
+    <div class="container">
+        <div class="row">
+            <!-- About Us Section -->
+            <div class="col-lg-4 col-md-6">
+                <img src="{% static "tiendavirtual/img/ep_blanco_letras.png" %}" alt=""/>
+                <br>
+                <p>
+                    Empresa Pública de Producción y Desarrollo Estratégico de la Universidad Estatal de Milagro.
+                </p>
+            </div>
+
+            <!-- Links Section -->
+            <div class="col-lg-2 col-md-6">
+                <h4>Menú</h4>
+                <ul class="footer-links">
+                    <li><a href="/">Inicio</a></li>
+                    <li><a href="/productos">Productos</a></li>
+                    <li><a href="/ofertas">Ofertas</a></li>
+                    <li><a href="/contactanos">Contacto</a></li>
+                </ul>
+            </div>
+
+            <!-- Contact Section -->
+            <div class="col-lg-3 col-md-6">
+                <h4>Contáctanos</h4>
+                <ul class="footer-contact">
+                    <li>
+                        <i class="fe fe-map"></i> {{ confi.direccion }}
+                    </li>
+                    <li><i class="fe fe-phone"></i> CEL. 0939827532</li>
+                    <li><i class="fe fe-mail"></i><a target="_blank"
+                                                           href="mailto:ventas_unistore@epunemi.gob.ec">ventas_unistore@epunemi.gob.ec</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Social Media Section -->
+            <div class="col-lg-3 col-md-6">
+                <h4>Síguenos</h4>
+                <div class="social-links">
+                    <a href="#" class="facebook"><i class="fe fe-facebook"></i></a>
+                    <a href="#" class="instagram"><i class="fe fe-instagram"></i></a>
+                    <a href="#" class="linkedin"><i class="fe fe-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <p>&copy; {{ fechaactual.year }} EPUNEMI. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</footer>
+
+<script src="{% static "tiendavirtual/assets/libs/jquery/dist/jquery.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/odometer/odometer.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/magnific-popup/dist/jquery.magnific-popup.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/bootstrap-select/dist/js/bootstrap-select.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/flatpickr/dist/flatpickr.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/inputmask/dist/jquery.inputmask.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/apexcharts/dist/apexcharts.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/quill/dist/quill.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/file-upload-with-preview/dist/file-upload-with-preview.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/dragula/dist/dragula.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/bs-stepper/dist/js/bs-stepper.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/dropzone/dist/min/dropzone.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/jQuery.print/jQuery.print.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/prismjs/prism.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/prismjs/components/prism-scss.min.js" %}"></script>
+
+<script src="{% static "tiendavirtual/assets/libs/tiny-slider/dist/min/tiny-slider.js" %}"></script>
+
+
+<script src="{% static "tiendavirtual/assets/libs/typed.js/lib/typed.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/jsvectormap/dist/js/jsvectormap.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/jsvectormap/dist/maps/world.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/datatables.net/js/jquery.dataTables.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/datatables.net-bs5/js/dataTables.bootstrap5.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/datatables.net-responsive/js/dataTables.responsive.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/datatables.net-responsive-bs5/js/responsive.bootstrap5.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/prismjs/plugins/toolbar/prism-toolbar.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/prismjs/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/fullcalendar/main.min.js" %}"></script>
+
+<script src="{% static "tiendavirtual/assets/libs/simplebar/dist/simplebar.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/nouislider/dist/nouislider.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/wnumb/wNumb.min.js" %}"></script>
+<script src="{% static "tiendavirtual/assets/libs/glightbox/dist/js/glightbox.min.js" %}"></script>
+<script type='text/javascript' src="/static/crm/jquery.blockUI.js?v=2.71.0"></script>
+
+
+
+<!-- Theme JS -->
+<script src="{% static "tiendavirtual/assets/js/theme.min.js" %}"></script>
+
+<script>
+    function bloqueointerface() {
+        $.blockUI({
+            message: '<span class="spinner-grow spinner-border-lg" role="status" aria-hidden="true" style="width: 10rem; height: 10rem;color: #ff7f00c9!important;"></span>',
+            css: {
+                backgroundColor: 'transparent',
+                border: '0',
+                zIndex: 9999999
+            },
+            overlayCSS: {
+                backgroundColor: '#fff',
+                opacity: 0.8,
+                zIndex: 9999990
+            }
+        });
+    }
+</script>
+
+</body>
+
+
+<!-- Mirrored from codescandy.com/geeks-bootstrap-5/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 17 May 2022 19:21:09 GMT -->
+</html>

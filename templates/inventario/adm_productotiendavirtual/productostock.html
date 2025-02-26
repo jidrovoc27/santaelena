@@ -1,0 +1,270 @@
+{% extends "inventario/adm_productotiendavirtual/basetv.html" %}
+{% load extras %}
+{% block atras %}/{% endblock %}
+{% block extraheading %}
+    <script>
+        $(function () {
+            $("#cantidadStock").keypress(function (e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    $("#adicionarStock").click();
+                }
+            });
+
+            function realizarOperacion(action, id, cantidad, observacion, successMessage, errorMessage) {
+                $.ajax({
+                    type: "POST",
+                    url: "/productotiendavirtual",
+                    data: {'action': action, 'id': id, 'cantidad': cantidad, 'observacion': observacion},
+                    success: function (data) {
+                        $.unblockUI();
+                        if (data.result === false) {
+                            Swal.fire({
+                                type: "success",
+                                icon: "success",
+                                title: successMessage,
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            cerrarModal();
+                            location.reload();
+                        } else {
+                            Swal.fire({
+                                type: "error",
+                                icon: "error",
+                                title: errorMessage,
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        }
+                    }
+                });
+            }
+
+            $("#saveChanges").click(function () {
+                bloqueointerface();
+                var idt = $('#cantidadModal').attr('data-idt').split('_')[0];
+                var tipo = $('#cantidadModal').attr('data-idt').split('_')[1];
+                var cantidad = $("#cantidadStock").val();
+                var observacion = $("#observacionSalida").val();
+
+                if (cantidad > 0) {
+                    if (tipo === 'aumentarstock') {
+                        realizarOperacion(
+                            'aumentarstock',
+                            idt,
+                            cantidad,
+                            observacion,
+                            "Has aumentado el stock exitosamente.",
+                            "Ha ocurrido un error al realizar la operación."
+                        );
+                    } else {
+                        realizarOperacion(
+                            'registrarsalida',
+                            idt,
+                            cantidad,
+                            observacion,
+                            "Has registrado la salida exitosamente.",
+                            "Ha ocurrido un error al registrar la salida."
+                        );
+                    }
+                } else {
+                    $.unblockUI();
+                    Swal.fire({
+                        type: "error",
+                        icon: "error",
+                        title: "Ingrese una cantidad mayor a cero.",
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                }
+            });
+
+
+            $(".aumentarStock").click(function () {
+                var idt = $(this).attr('idt');
+                var des_ = $(this).attr('des_');
+                $('#cantidadModal').attr('data-idt', idt + '_aumentarstock');
+                $('#cantidadModal').modal('show');
+                $('.modal-title').text('AUMENTAR STOCK: ' + des_);
+
+            });
+
+            $(".registrarDevolucion").click(function () {
+                var idt = $(this).attr('idt');
+                var des_ = $(this).attr('des_');
+                $('#cantidadModal').attr('data-idt', idt + '_devolucion');
+                $('#cantidadModal').modal('show');
+                $('.modal-title').text('REGISTRAR SALIDA: ' + des_);
+            });
+
+
+            $('#cantidadModal .btn-danger').on('click', cerrarModal);
+            $('#cantidadModal .close').on('click', cerrarModal);
+
+            function cerrarModal() {
+                $('#cantidadModal').modal('hide');
+                $('#cantidadStock').val('');
+            };
+        })
+    </script>
+{% endblock %}
+{% block content %}
+    <div id="cantidadModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border: none">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <div class="form-group">
+                            <label for="cantidadStock">Cantidad</label>
+                            <input type="number" id="cantidadStock" class="form-control">
+                        </div>
+                    </form>
+                </div>
+                <div id="textareaObservacion" class="modal-body">
+                    <form id="editForm">
+                        <div class="form-group">
+                            <label for="observacionSalida">Observación</label>
+                            <textarea id="observacionSalida" class="form-control"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="saveChanges">Adicionar</button>
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3 mt-1">
+        <div class="card-header">
+            <h4 class="mb-0"><b><i class="fa fa-cube"></i> {{ title }}</b></h4>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="mt-0 pt-0">
+            <div class="col-lg-12 pb-2">
+                <a href="javascript:void(0)" onclick="formModal('','Adicionar Stock','addstock', true)"
+                   class="btn btn-success"><i class="fa fa-plus"></i> Adicionar Stock</a>
+            </div>
+        </div>
+    </div>
+
+    <form method="GET">
+        <div class="row">
+            <div class="mt-0 pt-0">
+                <input type="hidden" name="action" value="{{ action }}">
+                <div class="col-md-12 col-sm-12">
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" placeholder="Buscar por el nombre del stock. "
+                               aria-label="Buscar"
+                               aria-describedby="button-addon2" name="s" value="{{ s }}">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit" id="button-addon2"><i
+                                    class="fa fa-search"></i></button>
+                            {% if url_vars %}
+                                <a title="Ver todo" href="{{ request.path }}?action={{ action }}"
+                                   class="btn btn-default tr">
+                                    <i class="fas fa-sync-alt"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="row-fluid">
+        <div class="span12">
+            <label class="label label-info" style="font-size: 13px; padding: 8px"><i class="fa fa-cubes"
+                                                                                     aria-hidden="true"></i> Total
+                Stock: <b>{{ totalstock }}</b></label>
+        </div>
+    </div>
+    <div class="card mb-4">
+        <div class="card-body rounded-3">
+            <div class="table-responsive">
+                <table class='tabla_responsive table table-bordered table-striped'>
+                    <thead class="table-light">
+                    <tr>
+                        <th style="text-align: center; width: 1%">N°</th>
+                        <th style="text-align: center; width: 10%">Productos</th>
+                        <th style="text-align: center; width: 1%">Cantidad disponible</th>
+                        {#                        <th style="text-align: center; width: 1%">Especificaciones</th>#}
+                        <th style="text-align: center; width: 1%"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for l in listado %}
+                        <tr>
+                            <td style="text-align: center;">{{ l.id }}</td>
+                            <td style="text-align: left;">{{ l.producto }}</td>
+                            <td style="text-align: center;">{{ l.cantidad }}</td>
+                            {#                            <td style="text-align: center;">#}
+                            {#                                <a class="btn btn-primary" href="javascript:void(0);"#}
+                            {#                                   onclick="formModal('{{ l.id }}','Especificaciones: {{ l.producto }}', 'verespecificacionesstock', true)">#}
+                            {#                                    <i class="fa fa-eye" aria-hidden="true"></i>#}
+                            {#                                </a>#}
+                            {#                            </td>#}
+                            <td style="text-align: center; width: 5%;">
+                                <a href="javascript:void(0);" class="btn-icon btn btn-ghost btn-sm rounded-circle"
+                                   data-bs-toggle="dropdown" data-offset="-140" aria-haspopup="true"
+                                   aria-expanded="false">
+                                    <i class="fa fa-ellipsis-v" aria-hidden="true"></i></a>
+                                <div class="dropdown-menu" style="">
+                                    <button idt="{{ l.id }}"  des_="{{ l }}" type="button" class="dropdown-item aumentarStock"
+                                            data-dismiss="modal">
+                                        <i class="fa fa-plus dropdown-item-icon" aria-hidden="true"></i>
+                                        Aumentar Stock
+                                    </button>
+
+                                    <button idt="{{ l.id }}" des_="{{ l }}" type="button" class="dropdown-item registrarDevolucion"
+                                            data-dismiss="modal">
+                                        <i class="fa fa-arrow-left dropdown-item-icon" aria-hidden="true"></i>
+                                        Registrar Salida
+                                    </button>
+
+                                    <a class="dropdown-item" href="javascript:void(0);"
+                                       onclick="formModal('{{ l.id }}','Kardex Stock: {{ l.producto }}', 'kardex', true)">
+                                        <i class="fa fa-book dropdown-item-icon" aria-hidden="true"></i>
+                                        Kardex
+                                    </a>
+
+                                    <a class="dropdown-item" href="{{ request.path }}?action=imprimirkardex&id={{ l.id }}">
+                                        <i class="fa fa-file-excel dropdown-item-icon" aria-hidden="true"></i>
+                                        Excel Kardex
+                                    </a>
+
+{#                                    <a class="dropdown-item" href="javascript:void(0);"#}
+{#                                       onclick="formModal('{{ l.id }}','Editar Stock: {{ l.producto }}', 'editstock', true)">#}
+{#                                        <i class="fa fa-pen-to-square dropdown-item-icon" aria-hidden="true"></i>#}
+{#                                        Editar#}
+{#                                    </a>#}
+
+                                    <a class="dropdown-item" href="javascript:void(0);"
+                                       onclick="eliminarajax('{{ l.id }}','¿Realmente desea eliminar: {{ l }}?', 'delstock')">
+                                        <i class="fa fa-close dropdown-item-icon" aria-hidden="true"></i>
+                                        Eliminar
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <td colspan="9" style="text-align: center;">NO EXISTEN PRODUCTOS EN STOCK</td>
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% include 'paginacionb4.html' %}
+{% endblock %}

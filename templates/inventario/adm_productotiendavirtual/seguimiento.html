@@ -1,0 +1,276 @@
+{% extends "inventario/adm_productotiendavirtual/basetv.html" %}
+{% load extras %}
+{% block atras %}/productotiendavirtual?action=pedidos{% endblock %}
+{% block extraheading %}
+    <script>
+        $(function () {
+            $("select").select2({width: '100%'});
+            $("#btnregistrar").click(function () {
+                $('#estadoModal').modal('show');
+            })
+
+            $('#estadoModal .btn-danger').on('click', cerrarModal);
+            $('#estadoModal .close').on('click', cerrarModal);
+
+            function cerrarModal() {
+                $('#estadoModal').modal('hide');
+            }
+
+            $('#guardarSeguimiento').on('click', function () {
+                var estado = $("#id_estado").val();
+                var id = '{{ carrito.id }}';
+                var archivo = $('#archivo')[0].files[0];
+                if (archivo && archivo.size > 10 * 1024 * 1024) {
+                    Swal.fire({
+                        type: "error",
+                        icon: "error",
+                        title: "El archivo es demasiado grande.",
+                        text: "El tamaño máximo permitido es de 10 MB.",
+                        showConfirmButton: true
+                    });
+                    return;
+                }
+                var formData = new FormData();
+                formData.append('action', 'registrarseguimiento');
+                formData.append('id', id);
+                formData.append('estado', estado);
+                if (archivo) {
+                    formData.append('archivo', archivo);
+                }
+
+                $.ajax({
+                    type: "POST",
+                    url: "/productotiendavirtual",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+                        $.unblockUI();
+                        if (data.result === true) {
+                            Swal.fire({
+                                type: "success",
+                                icon: "success",
+                                title: "Has agregado el estado con éxito.",
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            location.reload();
+                        } else {
+                            mensajeWarning(data.mensaje);
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        $.unblockUI();
+                        console.error('Error:', textStatus, errorThrown);
+                    }
+                });
+            });
+        });
+    </script>
+    <script>
+        function ejecutar_accion(accion, titulo, id) {
+            Swal.fire({
+                title: `${titulo}`,
+                text: "Esta acción es irreversible",
+                type: 'info',
+                showCancelButton: true,
+                allowOutsideClick: false,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Si, deseo hacerlo',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.value) {
+                    bloqueointerface();
+                    $.ajax({
+                        type: "POST",
+                        url: '{{ request.path }}',
+                        data: {action: accion, id: id},
+                        success: function (data) {
+                            if (data.result === true) {
+                                location.reload();
+                            } else {
+                                $.unblockUI();
+                                Swal.fire({
+                                    title: `Advertencia`,
+                                    text: data.mensaje,
+                                    type: 'warning',
+                                    showCancelButton: false,
+                                    allowOutsideClick: false,
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#d33',
+                                    confirmButtonText: 'Aceptar',
+                                    cancelButtonText: 'Cancelar'
+                                })
+                            }
+                        },
+                        error: function () {
+                            setTimeout($.unblockUI, 1);
+                            mensajeWarning("Error de conexión.");
+                        },
+                        dataType: "json"
+                    });
+                }
+            })
+        }
+    </script>
+    <style>
+
+        #pedidosrealizados {
+            background-color: #034c79 !important;
+        }
+
+        #pedidosrealizados:hover {
+            background-color: #5aa8d9 !important;
+            color: #000 !important;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <!-- Modal para editar especificación -->
+    <div id="estadoModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar Estado</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border: none">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="estadoForm">
+                        <div class="form-group">
+                            <label for="id_estado">Estado</label>
+                            <select id="id_estado" class="form-control">
+                                {% for estado in ESTADO_CARRITO %}
+                                    <option value="{{ estado.0 }}">{{ estado.1 }}</option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label for="archivo">Subir Archivo</label>
+                            <input type="file" id="archivo" class="form-control-file" accept=".png, .jpg, .jpeg, .pdf">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="guardarSeguimiento">Agregar</button>
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3 mt-1">
+        <div class="card-header">
+            <h4 class="mb-0"><b><i class="fa fa-truck-ramp-box"></i> {{ title }} | {% if carrito.atendido %}
+                <a class="btn btn-success">Atendido</a>{% else %}<a class="btn btn-warning">No atendido</a>{% endif %}
+            </b></h4>
+        </div>
+    </div>
+
+
+    <div class="card mb-4">
+
+        <div class="card-body rounded-3">
+            <h2>Información del pedido</h2>
+            <div style="margin-bottom: 10px;">
+                <strong>Persona:</strong> {{ carrito.persona }} | {{ carrito.persona.identificacion }}
+            </div>
+            <div style="margin-bottom: 10px;">
+                <strong>Contacto:</strong> {{ carrito.contacto }}
+            </div>
+            <div style="margin-bottom: 10px;">
+                <strong>Método de envío:</strong> {{ carrito.metodoenvio.get_tipo_display }}
+            </div>
+            {% if carrito.metodoenvio.tipo == 1 %}
+                <div style="margin-bottom: 10px;">
+                    <strong>Dirección:</strong> {{ carrito.get_direccion_envio|upper }}
+                </div>
+            {% endif %}
+            <div style="margin-bottom: 10px;">
+                <strong>Nota adicional:</strong> {{ carrito.notaadicional|default:'-----' }}
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="mt-0 pt-0">
+            <div class="col-lg-12 pb-2">
+                <a id="btnregistrar" class="btn btn-success"><i class="fa fa-plus"></i> Registrar</a>
+                <a id="btnatendido" style="cursor: pointer;" class="btn btn-info"
+                   onclick="ejecutar_accion('actualizaratendido', 'Está por actualizar el estado del pedido', '{{ carrito.id }}')"><i
+                        class="fa fa-{% if not carrito.atendido %}check{% else %}x{% endif %}"></i> Marcar como
+                    {% if not carrito.atendido %}atendido{% else %}desatendido{% endif %}</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body rounded-3">
+            <div class="table-responsive">
+                <table class='tabla_responsive table table-bordered table-striped'>
+                    <thead id="table_head">
+                    <tr>
+                        <th style="width:1%; text-align: center">#</th>
+                        <th style="width:10%; text-align: center">Cliente</th>
+                        <th style="width:10%; text-align: center">Detalle</th>
+                        <th style="width:1%; text-align: center">Cantidad</th>
+                        <th style="width:2%; text-align: center">Estado</th>
+                        <th style="width:1%; text-align: center">Fecha | Hora</th>
+                        <th style="width:1%; text-align: center">Archivo</th>
+                        <th style="width:1%; text-align: center"></th>
+                    </tr>
+                    </thead>
+                    <tbody id="table_body">
+                    {% for l in listado %}
+                        <tr>
+                            <td style="text-align: center">{{ l.id }}</td>
+                            <td style="text-align: left">{{ l.carrito.persona }}</td>
+                            <td style="text-align: left">
+                                {% for articulo in l.carrito.get_articulos %}
+                                    {% for detail in articulo.stock.especificacion_producto.all %}
+                                        {{ detail }}
+                                    {% endfor %}
+                                {% endfor %}
+                            </td>
+                            <td style="text-align: center">{{ l.get_total_productos|floatformat:0 }}</td>
+                            <td style="text-align: center">{{ l.get_estado_display }}</td>
+                            <td style="text-align: center">{{ l.fecha_creacion|date:'d/m/Y h:i a' }}</td>
+                            <td style="text-align: center">
+                                {% if l.archivo %}
+                                    <a class="btn btn-success" href="/media/{{ l.archivo }}"
+                                       target="_blank"><i class="fa fa-arrow-down"></i> Descargar</a>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center; width: 5%;">
+                                <a href="javascript:void(0);" class="btn-icon btn btn-ghost btn-sm rounded-circle"
+                                   data-bs-toggle="dropdown" data-offset="-140" aria-haspopup="true"
+                                   aria-expanded="false">
+                                    <i class="fa fa-ellipsis-v" aria-hidden="true"></i></a>
+                                <div class="dropdown-menu" style="">
+                                    <a class="dropdown-item" href="javascript:void(0);"
+                                       onclick="eliminarajax('{{ l.id }}','¿REALMENTE DESEAS ELIMINAR ESTADO: {{ l }}?', 'delhistorial')">
+                                        <i class="fa fa-close dropdown-item-icon" aria-hidden="true"></i>
+                                        Eliminar
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="20">NO EXISTEN INSCRITOS REGISTRADOS</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        {% include 'paginacionb4.html' %}
+    </div>
+{% endblock %}

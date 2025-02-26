@@ -1,0 +1,245 @@
+{% extends "ajaxform.html" %}
+{% block extraheading %}
+    <script type="text/javascript">
+        $(function () {
+            var contador = 0;
+            var response = {datos: []};
+
+            $("#id_tipoespecificacion").change(function () {
+                if ($(this).val() !== '') {
+                    $("#id_valor").val('')
+                }
+            });
+
+            $("#adicionarespecificacion").click(function () {
+                const tipoespecificacion = $("#id_tipoespecificacion");
+                const valor = $("#id_valor").val().toUpperCase();
+                const orden = $("#id_orden").val();
+                if (!comprobar_repetidos(tipoespecificacion.val(), valor, orden)) {
+                    if (tipoespecificacion.val() !== '' && valor !== '' && orden !== '') {
+                        const nuevaFila = `
+                                            <tr data-id="${contador}">
+                                                <td style="text-align: center">${contador}</td>
+                                                <td style="text-align: center">${tipoespecificacion.find('option:selected').text().toUpperCase()}</td>
+                                                <td style="text-align: center">${valor.toUpperCase()}</td>
+                                                <td style="text-align: center">${orden}</td>
+                                                <td style="text-align: center">
+                                                    <a id="edit_especificacion_${contador}_${tipoespecificacion.val()}" class="btn btn-primary btn-sm edit-especificacion"><i class="fa fa-edit"></i></a>
+                                                    <a id="btn-eliminar-${contador++}" class="btn btn-danger btn-sm eliminarfila">
+                                                        <i class="fa fa-remove"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>`;
+                        $("#table_body").append(nuevaFila);
+                        $("#table_body").find("tr:contains('NO EXISTEN DATOS')").remove();
+
+                        response.datos.push({
+                            id: contador - 1,
+                            tipoespecificacion: tipoespecificacion.val(),
+                            valor: valor,
+                            orden: orden
+                        });
+                        // const jsonResponse = JSON.stringify(response);
+                        // console.log(jsonResponse);
+                        $("#id_valor").val('');
+                        $("#id_orden").val();
+                    } else {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "Es necesario que ingrese un tipo de especificación y su valor."
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        icon: "warning",
+                        title: `Ya existe una especificación ${tipoespecificacion.find('option:selected').text().toUpperCase()} con el valor ${valor.toUpperCase()}`
+                    });
+                }
+            });
+
+
+            $("#table_body").on("click", ".eliminarfila", function () {
+                var idt = $(this).attr('id').split('-')[2]
+                const index = response.datos.findIndex(dato => dato.id === parseInt(idt, 10));
+                if (index !== -1) {
+                    response.datos.splice(index, 1);
+                }
+                $(this).closest('tr').remove();
+                if ($("#table_body tr").length === 0) {
+                    $("#table_body").html('<tr><td colspan="10">NO EXISTEN DATOS</td></tr>');
+                    contador = 0;
+                }
+                // const jsonResponse = JSON.stringify(response);
+                // console.log(jsonResponse);
+            });
+
+            $("#formbutton").off("click").click(function (e) {
+                bloqueointerface();
+                e.preventDefault();
+                const tableBody = document.getElementById("table_body");
+                const rows = tableBody.getElementsByTagName("tr");
+
+                if (rows.length === 1 && rows[0].textContent.includes("NO EXISTEN DATOS")) {
+                    $.unblockUI();
+                    Swal.fire({
+                        type: "warning",
+                        icon: "warning",
+                        title: "Es necesario que adicione las especificaciones del producto."
+                    });
+                } else {
+                    var formData = new FormData();
+                    formData.append('action', 'verespecificaciones');
+                    formData.append('id', {{ id }});
+                    formData.append('registros', JSON.stringify(response));
+                    $.ajax({
+                        type: "POST",
+                        url: "/productotiendavirtual",
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        success: function (data) {
+                            $.unblockUI();
+                            if (data.result === false) {
+                                Swal.fire({
+                                    type: "success",
+                                    icon: "success",
+                                    title: "Has agregado las especificaciones con éxito.",
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                                location.href = '/productotiendavirtual'
+                            }
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            $.unblockUI();
+                            console.error('Error:', textStatus, errorThrown);
+                        }
+                    });
+                }
+            });
+
+            comprobar_repetidos = function (tipoespecificacion, valor, orden) {
+                const coincidencias = response.datos.filter(dato => dato.tipoespecificacion === tipoespecificacion);
+                const duplicado = coincidencias.some(dato => dato.valor === valor);
+                const duplicadoOrden = coincidencias.some(dato => dato.orden === orden);
+
+                return duplicado && duplicadoOrden;
+            };
+
+            $(document).on('click', '.edit-especificacion', function () {
+                const fila = $(this).closest('tr');
+                const tipoEspecificacion = fila.find('td').eq(1).text();
+                const valor = fila.find('td').eq(2).text();
+                const orden = fila.find('td').eq(3).text();
+                $('#editTipoEspecificacion').val(tipoEspecificacion);
+                $('#editValor').val(valor);
+                $('#editOrden').val(orden);
+                $('#editModal').modal('show');
+                $('#editModal').data('fila', fila);
+            });
+
+            $('#saveChanges').on('click', function () {
+                const fila = $('#editModal').data('fila');
+                const nuevoValor = $('#editValor').val().toUpperCase();
+                const tipoespecificacion = $("#editTipoEspecificacion").val()
+                const nuevoOrden = $("#editOrden").val()
+                const idt = fila.find('.edit-especificacion').attr('id').split('_')[3];
+                if (!comprobar_repetidos(idt, nuevoValor, nuevoOrden)) {
+                    fila.find('td').eq(2).text(nuevoValor.toUpperCase());
+                    fila.find('td').eq(3).text(nuevoOrden);
+                    $('#editModal').modal('hide');
+                    const idt = fila.find('.edit-especificacion').attr('id').split('_')[2];
+                    const index = response.datos.find(dato => dato.id === parseInt(idt, 10));
+                    if (index) {
+                        index.valor = nuevoValor.toUpperCase()
+                        index.orden = nuevoOrden
+                    }
+                } else {
+                    Swal.fire({
+                        icon: "warning",
+                        title: `Ya existe una especificación ${tipoespecificacion} con el valor ${nuevoValor} y orden ${nuevoOrden}`
+                    });
+                }
+                // const jsonResponse = JSON.stringify(response);
+                // console.log(jsonResponse);
+            });
+
+            $('#editModal .btn-danger').on('click', cerrarModal);
+            $('#editModal .close').on('click', cerrarModal);
+
+            function cerrarModal() {
+                $('#editModal').modal('hide');
+            }
+        });
+    </script>
+{% endblock %}
+{% block atras %}/productotiendavirtual
+{% endblock %}
+{% block titulo %}{{ title }}{% endblock %}
+{% block subtitle %}Ingrese las especificaciones de forma correcta{% endblock %}
+{% block formpreffix %}
+    <!-- Modal para editar especificación -->
+    <div id="editModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Especificación</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border: none">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <div class="form-group">
+                            <label for="editTipoEspecificacion">Tipo de Especificación</label>
+                            <input type="text" id="editTipoEspecificacion" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="editValor">Valor</label>
+                            <input type="text" id="editValor" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="editOrden">Orden</label>
+                            <input type="number" id="editOrden" class="form-control">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="saveChanges">Guardar</button>
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 pb-2">
+        <a href="javascript:;" id="adicionarespecificacion" class="btn btn-success"><i class="fa fa-plus"></i> Adicionar
+            especificación</a>
+    </div>
+    <div class="card mb-4">
+        <div class="card-body border-6 rounded-3">
+            <table class='tabla_responsive table table-bordered table-striped'>
+                <thead id="table_head">
+                <tr>
+                    <th style="width:1%; text-align: center">#</th>
+                    <th style="width:10%; text-align: center">Tipo de Especificicación</th>
+                    <th style="width:10%; text-align: center">Valor de la Especificación</th>
+                    <th style="width:1%; text-align: center">Orden</th>
+                    <th style="width:2%; text-align: center"></th>
+                </tr>
+                </thead>
+                <tbody id="table_body">
+                <tr>
+                    <td colspan="10">NO EXISTEN DATOS</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+{% block formaction %}/productotiendavirtual{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='verespecificaciones'/>
+    <input type='hidden' name='id' value='{{ id }}'/>
+{% endblock %}
+{% block formback %}/productotiendavirtual{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "inventario/adm_productotiendavirtual/basetv.html" %}
+{% load extras %}
+{% block atras %}/{% endblock %}
+{% block extraheading %}
+{% endblock %}
+{% block content %}
+
+    <div class="card mb-3 mt-1">
+        <div class="card-header">
+            <h4 class="mb-0"><b><i class="fa fa-chart-pie"></i> {{ title }}</b></h4>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body rounded-3">
+            <div class="table-responsive">
+                <div class="container my-5">
+                    <div class="row g-4">
+                        <!-- Card 1 -->
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card text-white bg-primary shadow">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fa fa-cart-shopping"></i> TOTAL DE VENTAS</h5>
+                                    <h2 class="card-text">{{ total_ventas }}</h2>
+{#                                    <small class="text-white-50">Actualizado hace 1 hora</small>#}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 -->
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card text-white bg-info shadow">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="bi bi-credit-card"></i> Total de ventas Online</h5>
+                                    <h2 class="card-text">{{ total_ventas_online }}</h2>
+{#                                    <small class="text-white-50">Últimas 24 horas</small>#}
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Card 3 -->
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card text-white bg-light-primary shadow">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fa fa-cash-register"></i> Total de ventas Física</h5>
+                                    <h2 class="card-text">{{ total_ventas_tienda }}</h2>
+{#                                    <small class="text-white-50">Revisar detalles</small>#}
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Card 4 -->
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card text-white bg-light-success shadow">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fa fa-comment-dollar"></i> TOTAL RECAUDADO</h5>
+                                    <h2 class="card-text" style="align-self: end">$ {{ total_recaudado|floatformat:2 }}</h2>
+{#                                    <small class="text-white-50">Requiere atención</small>#}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

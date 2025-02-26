@@ -1,0 +1,39 @@
+<div class="dropdown-menu dropdown-menu-end shadow">
+    <div class="dropdown-item">
+        <div class="d-flex">
+            <div class="avatar avatar-md avatar-indicators avatar-online">
+                <img alt="avatar" src="{{ persona_.get_foto }}" class="rounded-circle"/>
+            </div>
+            <div class="ms-3 lh-1">
+                <h5 class="mb-1">{{ persona_.nombre_normal_minus }}</h5>
+                <p class="mb-0 text-muted">{{ persona_.usuario }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="dropdown-divider"></div>
+    <ul class="list-unstyled">
+        <li>
+            <a class="dropdown-item" href="/miperfil">
+                <i class="fe fe-user me-2"></i>Perfil
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" href="miperfil?action=mispedidos">
+                <i class="fe fe-shopping-bag me-2"></i>Mis pedidos
+            </a>
+        </li>
+{#        <li>#}
+{#            <a class="dropdown-item" href="#">#}
+{#                <i class="fe fe-star me-2"></i>Favoritos#}
+{#            </a>#}
+{#        </li>#}
+    </ul>
+    <div class="dropdown-divider"></div>
+    <ul class="list-unstyled">
+        <li>
+            <a class="dropdown-item" href="/logoutclinica">
+                <i class="fe fe-power me-2"></i>Cerrar sesión
+            </a>
+        </li>
+    </ul>
+</div>
