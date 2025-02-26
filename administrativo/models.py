@@ -492,7 +492,34 @@ class Administrativo(ModeloBase):
 
     def flexbox_alias(self):
         return [self.persona.identificacion, self.persona.nombre_completo()]
-        
+
+class Encargado(ModeloBase):
+    persona = models.ForeignKey(Persona, verbose_name=u"Persona", on_delete=models.CASCADE)
+    fechaingreso = models.DateField(verbose_name=u'Fecha ingreso')
+    activo = models.BooleanField(default=True, verbose_name=u"Activo")
+
+    def __str__(self):
+        return u'%s' % self.persona
+
+    class Meta:
+        verbose_name = u"Administrativo"
+        verbose_name_plural = u"Administrativos"
+        ordering = ['persona']
+        unique_together = ('persona',)
+
+    @staticmethod
+    def flexbox_query(q, extra=None, limit=25):
+        if ' ' in q:
+            s = q.split(" ")
+            return Administrativo.objects.filter(Q(persona__apellido1__contains=s[0]) & Q(persona__apellido2__contains=s[1])).distinct()[:limit]
+        return Administrativo.objects.filter(Q(persona__nombres__contains=q) | Q(persona__apellido1__contains=q) | Q(persona__apellido2__contains=q) | Q(persona__identificacion__contains=q)).distinct()[:limit]
+
+    def flexbox_repr(self):
+        return self.persona.identificacion + " - " + self.persona.nombre_completo_inverso() + " - " + self.id.__str__()
+
+    def flexbox_alias(self):
+        return [self.persona.identificacion, self.persona.nombre_completo()]
+
 class PerfilUsuario(ModeloBase):
     persona = models.ForeignKey(Persona, on_delete=models.CASCADE)
     administrativo = models.ForeignKey(Administrativo, blank=True, null=True, verbose_name=u'Administrativo', on_delete=models.CASCADE)
@@ -811,4 +838,11 @@ class MenuFavoriteProfile(ModeloBase):
         ordering = ('setting',)
         unique_together = ('setting', 'profile',)
 
+
+class Perms(models.Model):
+    class Meta:
+        permissions = (
+            ("puede_eliminar_grupos", "Puede eliminar grupos"),
+            ("puede_eliminar_stock", "Puede eliminar stock"),
+        )
 

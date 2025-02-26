@@ -53,5 +53,6 @@ def _routingpanel(request):
 
 urlpatterns = [
     re_path(r'^$', _routingpanel, name='panel'),
+    re_path(r'^adminclinica/', admin.site.urls),
     re_path(r'^', include('administrativo.urls')),
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

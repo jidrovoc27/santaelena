@@ -67,7 +67,7 @@
                         <tr>
                             <td style="text-align: center;">{{ forloop.counter }}</td>
                             <td style="text-align: center;">{{ l.nombre }}</td>
-                            <td style="text-align: center;">{{ l.precio | floatformat:2 }}$</td>
+                            <td style="text-align: center;">${{ l.precio | floatformat:2 }}</td>
                             <td style="text-align: center;">
                                 {% if l.vigente %}
                                     <i class="fa fa-check" style="color: #55ea55"></i>

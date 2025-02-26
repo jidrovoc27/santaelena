@@ -6,7 +6,7 @@
             <table class='tabla_responsive table table-bordered table-striped'>
                     <thead class="table-light">
                     <tr>
-                        <th style="text-align: center; width: 1%">N°</th>
+                        <th style="text-align: center; width: 1%">Usuario</th>
                         <th style="text-align: center; width: 10%">Stock</th>
                         <th style="text-align: center; width: 1%">Movimiento</th>
                         <th style="text-align: center; width: 1%">Cantidad</th>
@@ -18,12 +18,12 @@
                     <tbody>
                     {% for l in listado %}
                         <tr>
-                            <td style="text-align: center;">{{ l.id }}</td>
+                            <td style="text-align: center;">{{ l.usuario_creacion }}</td>
                             <td style="text-align: left;">{{ l.stock }}</td>
-                            <td style="text-align: center;">{{ l.get_movimiento_display }}</td>
+                            <td style="text-align: center;"><span class="btn btn-{% if l.movimiento == 1 %}success{% else %}warning{% endif %}">{{ l.get_movimiento_display }}</span></td>
                             <td style="text-align: center;">{{ l.cantidad }}</td>
-                            <td style="text-align: center;">{{ l.costo|floatformat:2 }}$</td>
-                            <td style="text-align: center;">{{ l.total|floatformat:2 }}$</td>
+                            <td style="text-align: center;">${{ l.costo|floatformat:2 }}</td>
+                            <td style="text-align: center;">${{ l.total|floatformat:2 }}</td>
                             <td style="text-align: center;">{{ l.observacion|default:"" }}</td>
                         {% empty %}
                         <td colspan="9" style="text-align: center;">NO EXISTEN MOVIMIENTOS DE ESTE STOCK</td>

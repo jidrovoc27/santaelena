@@ -177,6 +177,11 @@
                                         class="fa fa-box nav-icon"></i> Productos en Stock
                                 </a>
                             </li>
+                            <li class="nav-item {% if request.session.viewactivo == 3 %}active{% endif %}">
+                                <a id="{{ idks }}" class="nav-link" href="{{ request.path }}?action=reporteria"><i
+                                        class="fa fa-box nav-icon"></i> Reportería
+                                </a>
+                            </li>
 {#                            <li class="nav-item {% if request.session.viewactivo == 6 %}active{% endif %}">#}
 {#                                <a class="nav-link" href="{{ request.path }}?action=promocion"><i#}
 {#                                        class="fa fa-box nav-icon"></i> Productos en Promoción#}

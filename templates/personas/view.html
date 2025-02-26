@@ -217,8 +217,10 @@
                             {% for grupo in administrativo.persona.grupos %}
                                 <div class="btn-group" style="margin-right: 3px; margin-bottom: 2px; margin-left: 0; float: left">
                                     <a href="javascript:;" class="btn btn-tini">{{ grupo|upper }}</a>{% if not forloop.last %}, {% endif %}
-                                    {% if perms.administrativo.puede_eliminar_grupos %}
+                                    {% if perms.sga.puede_modificar_administrativos %}
+                                        {% if not grupo.id == grupo_administrativos and not grupo.id == grupo_docentes and not grupo.id == grupo_estudiantes and not grupo.id == grupo_empleadores %}
                                             <a href="javascript:;" nhref="/administrativos?action=delgrupo&id={{ administrativo.id }}&idg={{ grupo.id }}" class="btn btn-tini confirmacionmodal btn-danger"><i class="fa fa-minus"></i></a>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             {% endfor %}
@@ -265,7 +267,10 @@
                                             <li class="dropdown-submenu pull-left">
                                                 <a href="javascript:;"><i class="fa fa-wrench"></i> Acceso al sistema</a>
                                                 <ul class="dropdown-menu">
-                                                    {% if persona.usuario.is_superuser %}
+                                                    {% if persona.usuario.is_superuser or perms.sga.puede_modificar_credencial_administrativos %}
+                                                        {% if not administrativo.es_profesor %}
+                                                            <li><a class="confirmacionmodal" href="javascript:;" nhref='/administrativos?action=addprofesor&id={{ administrativo.id }}{% if gruposelect %}&g={{ gruposelect }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if perfil %}&perfil={{ perfil }}{% endif %}'><span class="fa fa-user"></span> Crear profesor</a></li>
+                                                        {% endif %}
                                                         <li><a class="confirmacionmodal" href="javascript:;" nhref="/administrativos?action=resetear&id={{ administrativo.id }}{% if gruposelect %}&g={{ gruposelect }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if perfil %}&perfil={{ perfil }}{% endif %}"><span class="fa fa-key"></span> Resetear clave usuario</a></li>
                                                     {% endif %}
                                                     {% if administrativo.activo %}
@@ -281,9 +286,9 @@
                                                 </ul>
                                             </li>
                                         {% endif %}
-{#                                        {% if persona.usuario.is_superuser and not administrativo.persona.usuario.is_superuser %}#}
-{#                                            <li><a href='/cu?id={{ administrativo.persona.usuario.id }}'><span class='fa fa-user'></span> Entrar como este usuario</li>#}
-{#                                        {% endif %}#}
+                                        {% if persona.usuario.is_superuser and not administrativo.persona.usuario.is_superuser %}
+                                            <li><a href='/cu?id={{ administrativo.persona.usuario.id }}'><span class='fa fa-user'></span> Entrar como este usuario</li>
+                                        {% endif %}
                                     </ul>
                                 </div>
                             {% endif %}
