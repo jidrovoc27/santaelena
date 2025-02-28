@@ -30,6 +30,9 @@ class AddProductoForm(FormModeloBase):
         model = Producto
         fields = ['nombre', 'descripcion', 'imagenprincipal', 'tiporubro', 'subcategoria', 'tipo', 'color', 'talla', 'material', 'stock', 'precio', 'vigente']
 
+class ImportarProductoForm(FormModeloBase):
+    archivo = ExtFileField(label=u'Archivo', required=False,help_text=u'Tamaño Maximo permitido 10Mb, en formato excel', ext_whitelist=(".xlx", ".xlsx", ".xlxs"), max_upload_size=10485760, widget=FileInput({}))
+
 class AddDescripcionForm(FormModeloBase):
     descripcion = forms.CharField(label=u'Descripción', max_length=800, widget=forms.TextInput(attrs={'class': 'imp-100'}), required=True)
 

@@ -2,10 +2,11 @@ import io
 import json
 import os
 import sys
+import openpyxl
 import traceback
 import xlsxwriter
 from xlwt import easyxf
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import xlwt
 from django.shortcuts import render, redirect
@@ -17,7 +18,7 @@ from django.template.loader import get_template
 from administrativo.commonviews import adduserdata
 from administrativo.funciones import MiPaginador, null_to_decimal, generar_nombre
 from administrativo.forms import AddProductoForm, AddDescripcionForm, AddSubCategoriaForm, EspecificacionProductoForm, \
-    AddStockForm, ImagenProductoForm, ImagenesProductoForm
+    AddStockForm, ImagenProductoForm, ImagenesProductoForm, ImportarProductoForm
 from administrativo.models import Producto, CategoriaProducto, SubCategoriaProducto, TipoEspecificacion, \
     EspecificacionProducto, Stock, ImagenProducto, KardexProducto
 
@@ -55,6 +56,28 @@ def view(request):
                         producto.imagenprincipal = request.FILES['imagenprincipal']
                     producto.save(request)
                     #log(u'Adiciono un producto: %s' % producto, request, 'add')
+                    return JsonResponse({'result': False})
+                else:
+                    return JsonResponse(
+                        {'result': True, 'mensaje': 'El formulario no ha sido completado correctamente.'})
+            except Exception as ex:
+                pass
+
+        if action == 'importarproductos':
+            try:
+                form = ImportarProductoForm(request.POST, request.FILES)
+                if form.is_valid():
+                    if 'archivo' in request.FILES:
+                        archivo = request.FILES['archivo']
+                        workbook = openpyxl.load_workbook(archivo, data_only=True)
+                        sheet = workbook.worksheets[0]
+                        novedades_registradas = []
+
+                        for row in sheet.iter_rows(min_row=2):
+                            cols = [cell.value for cell in row]
+                            nombre = str(cols[1]).strip()
+                            newproducto = Producto(nombre=nombre, descripcion=nombre, precio=0)
+                            newproducto.save(request)
                     return JsonResponse({'result': False})
                 else:
                     return JsonResponse(
@@ -496,6 +519,16 @@ def view(request):
                     data['action'] = 'add'
                     data['id'] = request.GET['id']
                     template = get_template("inventario/adm_productotiendavirtual/modal/form_producto.html")
+                    return JsonResponse({"result": True, 'data': template.render(data)})
+                except Exception as ex:
+                    return JsonResponse({"result": False, 'mensaje': str(ex)})
+
+            if action == 'importarproductos':
+                try:
+                    form = ImportarProductoForm()
+                    data['form'] = form
+                    data['action'] = 'importarproductos'
+                    template = get_template("inventario/adm_productotiendavirtual/formimportar.html")
                     return JsonResponse({"result": True, 'data': template.render(data)})
                 except Exception as ex:
                     return JsonResponse({"result": False, 'mensaje': str(ex)})
@@ -999,8 +1032,9 @@ def view(request):
 
             if action == 'imprimirkardexultimasemana':
                 try:
-                    stock = Stock.objects.get(id=request.GET['id'])
-                    listado = KardexProducto.objects.filter(status=True, stock=stock).order_by('-id')
+                    hoy = datetime.now()
+                    ultimo_domingo = hoy - timedelta(days=hoy.weekday() + 1)
+                    lunes_pasado = ultimo_domingo - timedelta(days=6)
                     response = HttpResponse(content_type='application/ms-excel')
                     response['Content-Disposition'] = 'attachment; filename="kardexproducto.xls"'
                     font_style = xlwt.XFStyle()
@@ -1028,21 +1062,24 @@ def view(request):
                     # Escribir el título en las filas combinadas
                     ws.write_merge(0, 1, 0, 6, 'CLÍNICA SANTA ELENA', style_header_1)
                     ws.write_merge(2, 3, 0, 6, 'FLUJO DE MOVIMIENTOS DEL PRODUCTO EN STOCK', style_header_2)
+                    for producto_ in Producto.objects.filter(status=True):
+                        for stock_ in Stock.objects.filter(status=True, producto=producto_):
+                            listado = KardexProducto.objects.filter(status=True, stock=stock_, fecha_creacion__gte=lunes_pasado, fecha_creacion__lte=ultimo_domingo).order_by('-id')
+                            for col_num in range(len(columns)):
+                                ws.write(row_num, col_num, columns[col_num][0], fuentecabecera)
+                                ws.col(col_num).width = columns[col_num][1]
 
-                    for col_num in range(len(columns)):
-                        ws.write(row_num, col_num, columns[col_num][0], fuentecabecera)
-                        ws.col(col_num).width = columns[col_num][1]
-
-                    row_num += 1
-                    for lis in listado.order_by('-fecha_creacion'):
-                        ws.write(row_num, 0, str(lis.id), style2)
-                        ws.write(row_num, 1, str(lis.stock), style2)
-                        ws.write(row_num, 2, lis.get_movimiento_display(), style2)
-                        ws.write(row_num, 3, lis.cantidad, style2)
-                        ws.write(row_num, 4, f"{lis.costo:.2f}", style2)
-                        ws.write(row_num, 5, f"{lis.total:.2f}", style2)
-                        ws.write(row_num, 6, str(lis.observacion or ' '), style2)
-                        row_num += 1
+                            row_num += 1
+                            for lis in listado.order_by('-fecha_creacion'):
+                                ws.write(row_num, 0, str(lis.id), style2)
+                                ws.write(row_num, 1, str(lis.stock), style2)
+                                ws.write(row_num, 2, lis.get_movimiento_display(), style2)
+                                ws.write(row_num, 3, lis.cantidad, style2)
+                                ws.write(row_num, 4, f"{lis.costo:.2f}", style2)
+                                ws.write(row_num, 5, f"{lis.total:.2f}", style2)
+                                ws.write(row_num, 6, str(lis.observacion or ' '), style2)
+                                row_num += 1
+                            row_num += 1
                     wb.save(response)
                     return response
                 except Exception as ex:
@@ -1053,7 +1090,7 @@ def view(request):
                 data['title'] = u'Productos'
                 request.session['viewactivo'] = 1
                 # data['listado'] = Producto.objects.filter(status=True).order_by('-fecha_modificacion')
-                search, url_vars, filtro = request.GET.get('s', ''), f'&action=', Q(status=True)
+                search, url_vars, filtro = request.GET.get('s', ''), '', Q(status=True)
                 if search:
                     data['s'] = search
                     filtro = filtro & \
