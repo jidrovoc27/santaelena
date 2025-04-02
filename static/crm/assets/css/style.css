@@ -106,9 +106,9 @@
     --color-secondary-alt: #FFF6F4;
     --color-tertiary: #FFA41B;
     --color-tertiary-2: #7152E9;
-    --color-dark: #034c79;
+    --color-dark: #032c80;
     --color-body: #21242dd9;
-    --color-heading: #034c79;
+    --color-heading: #032c80;
     --color-white: #ffffff;
     --color-shape: #EEEEEE;
     --color-shade: #F5F5F5;
@@ -1356,7 +1356,7 @@ iframe {
 }
 
 .bg-color-primary {
-    background-color: #034c79;
+    background-color: #032c80;
 }
 
 .bg-color-green {
@@ -25162,7 +25162,7 @@ body {
 }
 
 .eduvibe-footer-one {
-    background: #034c79;
+    background: #032c80;
 }
 
 .eduvibe-footer-one .shape-image {
@@ -25209,7 +25209,7 @@ body {
     position: relative;
     z-index: 2;
     margin-top: 138px;
-    background: #034c79;
+    background: #032c80;
 }
 
 @media only screen and (max-width: 767px) {

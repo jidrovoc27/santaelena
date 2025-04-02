@@ -163,7 +163,7 @@
             padding: 20px;
             background-color: #fff;
             box-shadow: 0 0 10px rgb(0 0 0 / 10%);
-            border-top: 2px solid #034c79;
+            border-top: 2px solid #032c80;
         }
 
         .normal-input {
@@ -1639,58 +1639,6 @@
                 {% if not request.user.is_anonymous %}
                     <div class="pull-right hidden-phone hidden-tablet visible-desktop">
                         <ul class="nav">
-                            {#                            {% if totnotification %}#}
-                            <li>
-                                <a href="javascript:void(0)" class="not-box-open" data-original-title="">
-                                    <div class="icon-container">
-                                        {% if totnotification > 0 %}
-                                            <i class="fas fa-circle blue-circle"></i>
-                                        {% endif %}
-                                        <i class="fa fa-bell"
-                                           style="font-size: 18px; {% if totnotification > 0 %}color:#ffae00{% endif %}"></i>
-                                    </div>
-                                </a>
-                                <div class="notification-box" id="notification">
-                                    <div class="nt-title">
-                                        <h4>Notificaciones</h4>
-                                        {#                                            <a href="javascript:void(0)" title="">Limpiar todo</a>#}
-                                    </div>
-                                    <div class="nott-list">
-                                        <div class="notfication-details">
-                                            {% for notification in listnotification %}
-                                                <a _href="{{ notification.url }}" href="javascript:void(0)"
-                                                   id="{{ notification.id }}" class="viewNotification_b">
-                                                    <div class="noti-item">
-                                                        <div class="noty-user-img">
-                                                            <img src="https://sga.unemi.edu.ec/static/logos/noti_mensaje.svg"
-                                                                 alt="">
-                                                        </div>
-                                                        <div class="notification-info">
-                                                            <h3>
-                                                                {{ notification.titulo }}
-                                                            </h3>
-                                                            <span><i
-                                                                    class="fa fa-calendar"></i> hace {{ notification.diasingresado }} dias</span>
-                                                        </div><!--notification-info -->
-                                                    </div>
-                                                </a>
-                                                {% if not forloop.last %}
-                                                    <hr style="margin-top: 0px; margin-bottom: 0px">
-                                                {% endif %}
-                                                {% empty %}
-                                                <div class="" style="text-align: center; color: #848586">
-                                                    <p style="font-size: 15px;font-weight: normal"> Sin
-                                                        notificaciones</p>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                        <div class="view-all-nots">
-                                            <a href="/notificacion" title=""><i class="fa fa-bell"></i> Ver mis
-                                                notificaciones</a>
-                                        </div>
-                                    </div><!--nott-list end-->
-                                </div><!--notification-box end-->
-                            </li>
                             {#                            {% endif %}#}
                             <ul class="nav">
                                 {% if perms.sagest.notificar_pagos_alumnos %}
@@ -1822,57 +1770,15 @@
                                 {% endif %}
                             </ul>
                             <li>
-                                <a href="/pass" class="tb" data-original-title="Cambiar contraseña"><i
-                                        class="fa fa-lock fa-2x"></i></a>
-                            </li>
-                            {% if persona.usuario.is_superuser %}
-                                <li>
-                                    <a href="/adminclinica" target="_blank" class="tb"
-                                       data-original-title="Administrar Django"><i class="fa fa-cogs fa-2x"></i></a>
-                                </li>
-                            {% endif %}
-                            <li>
                                 <a href="/logoutclinica" class="logoutuser tb" data-original-title="Cerrar Sesión"><i
                                         class="fa fa-power-off fa-2x"></i></a>
                             </li>
                         </ul>
                     </div>
                     {#                    {% if request.user.is_superuser %}#}
-                    <div class="pull-right hidden-phone hidden-tablet visible-desktop">
-                        <ul class="nav">
-                            <ul style="margin-right: -7px;" class="nav">
-                                <li class="dropdown has_hover" style="">
-                                    <a style="height: 50px; vertical-align: middle; padding-top: 12px"
-                                       href="javascript:;" id="accPeriodo" class="tb"
-                                       data-toggle="dropdown"
-                                       title="Periodos Fiscales">{{ periodo_fiscal }}</a>
-                                    <ul id="listaPeriodos" style="padding: 10px 10px;"
-                                        class="dropdown-menu pull-right {% if periodos.count > 10 %}card divScroll square scrollbar-dusty-grass square thin{% endif %}">
-                                        <li style="width: 100%;display: block;padding-left: 3%; padding-right: 3px;">
-                                            <input type="search" id="buscarPeriodo" autocomplete="off"
-                                                   placeholder="Buscar..."
-                                                   style="width: 100%;display: block; padding: 3px 15px; float: right; -webkit-border-radius: 20px; border-radius: 20px; margin-top: -4px;"/>
-                                        </li>
-                                        {% for periodo2 in periodos_todos %}
-                                            <li><a href='javascript:;' class='periodoselector'
-                                                   pid='{{ periodo2.id|encrypt }}'>
-                                                {% if periodo2.id == periodo_fiscal.id %}
-                                                    <i class="fa fa-check"></i>{% endif %} {{ periodo2 }}</a></li>
-                                        {% endfor %}
-                                    </ul>
-                                </li>
-                            </ul>
-                        </ul>
-                    </div>
-                    {#                    {% endif %}#}
+
                     <div class="pull-right visible-phone visible-tablet hidden-desktop">
                         <ul class="nav">
-                            <li>
-                                <a onclick="infoDevNotComp()" class="btnInstalarApp tr" title="Instalar"
-                                   style="font-size: 14px; margin-top: 4px;">
-                                    <i class="fa fa-android"></i> Instalar
-                                </a>
-                            </li>
                             {% if persona.tiene_multiples_perfiles %}
                                 <ul class="nav">
                                     <li class="dropdown">

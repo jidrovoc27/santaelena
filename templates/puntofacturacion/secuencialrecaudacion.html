@@ -1,0 +1,139 @@
+{% extends "base_system.html" %}
+{% load humanize %}
+{% load extras %}
+{% block heading %}
+    <script type="text/javascript">
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}{% endblock %}
+{% block canvas %}
+    <div class='row'>
+        <div class='col-lg-12'>
+            <div class="headtitle">
+                <h3 class="texto-blue">{{ title }}</h3>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-md-6 pb-2">
+            {% if persona.usuario.is_superuser %}
+                <a href="javascript:void(0)"
+                   onclick="formModal('0','Adicionar Secuencial de Recaudación','addsecuencial', true)"
+                   class="btn btn-success"><i class="fa fa-plus-circle"></i> Adicionar</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-2">
+        <div class="card-body rounded-3">
+{#            <span class="label label-info">Ultima Factura: {{ ultimafactura.numerocompleto }}</span><br>#}
+            <div class="table-responsive">
+                <table class='tabla_responsive table table-bordered'>
+                    <thead class="table-light">
+                    <tr>
+                        <th style="text-align: left;">Punto de Venta</th>
+                        <th style="text-align: center;">Secuencial Comprobantes</th>
+                        <th style="text-align: center; width: 5%"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for l in listado %}
+                        <tr>
+                            <td style="text-align: left; width: 250px">{{ l.puntoventa }}<br><span class="text-warning">Sec. Cajero: {{ l.cajero }}</span>
+                            </td>
+                            <td style="text-align: center;">{{ l.comprobante }}</td>
+                            <td style="text-align: center;">
+                                <div class="dropdown dropstart">
+                                    <a href="javascript:void(0);" class="btn-icon btn btn-ghost btn-sm rounded-circle"
+                                       data-bs-toggle="dropdown" data-offset="-140"
+                                       aria-haspopup="true" aria-expanded="false">
+                                        <i class="fa fa-ellipsis-v"></i>
+                                    </a>
+                                    <div class="dropdown-menu">
+                                        <a href="javascript:void(0)"
+                                           onclick="formModal('{{ l.id }}','Editar {{ l.nombre }}', 'changesecuencial', true)"
+                                           class="dropdown-item">
+                                            <i class="fa fa-edit dropdown-item-icon"></i> Editar
+                                        </a>
+                                        <a class="dropdown-item" href="javascript:;" title="Eliminar"
+                                           onclick="eliminarajax('{{ l.id }}', '{{ l }}', 'delchangesecuencial')">
+                                            <i class="fa fa-trash dropdown-item-icon"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <td colspan="15">NO EXISTEN REGISTROS</td>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" data-bs-focus="false" id="itemspanel" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4><b class="paneltitle">FORMULARIO MODAL</b></h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <div class="modal-body" style="padding: 1.5%;">
+                    <form class="form-horizontal form-modal" autocomplete="off" method="post"
+                          enctype="multipart/form-data" action="{{ request.path }}">
+                        {% csrf_token %}
+                        <div class="row panelbody">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer" id="footermodal">
+                    <button type="button" class="btn btn-default" data-bs-dismiss="modal"><i class="fa fa-times"></i>
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+    <script src="/static/bootstrap5/js/formquestion.js?0.24"></script>
+    <script>
+        function formModal(id, text, action, footer = true, ext) {
+            bloqueointerface()
+            $('#footermodal').show();
+            $.ajax({
+                type: "GET",
+                url: `{{ request.path }}`,
+                data: {
+                    'action': action,
+                    'id': id,
+                    'ext': ext,
+                },
+                success: function (data) {
+                    $.unblockUI();
+                    if (data.result === true) {
+                        if (footer === true) {
+                            $('#footermodal').hide();
+                        }
+                        $('.panelbody').html(data.data);
+                        $('#itemspanel .paneltitle').html(text.toUpperCase());
+                        $("#itemspanel").modal({backdrop: 'static', width: '900px'}).modal('show');
+                    } else {
+                        mensajeDanger(data.message);
+                    }
+                },
+                error: function () {
+                    $.unblockUI();
+                    mensajeDanger("Error de conexión.");
+                },
+                dataType: "json"
+            });
+        }
+    </script>
+{% endblock %}

@@ -1,14 +1,21 @@
+import datetime
+from datetime import datetime
+from decimal import Decimal
+
 #IMPORTACIÓN DJANGO
 from django.db import models
 from django.db.models.functions import Coalesce
-from django.db.models import Sum, F, FloatField
+from django.db.models import Sum, F, FloatField, Q
 from django.contrib.auth.models import User, Group
 from administrativo.choices import *
 from django.utils import timezone
 from django.core.cache import cache
 
 #IMPORTACIÓN SGA
-from administrativo.funciones import ModeloBase
+from administrativo.funciones import ModeloBase, null_to_decimal, null_to_numeric, convertir_fecha, miempresa
+
+
+unicode = str
 
 
 class CategoriaModulo(ModeloBase):
@@ -312,21 +319,20 @@ class Persona(ModeloBase):
     def tiene_perfilusuario(self):
         return self.perfilusuario_set.values("id").exists()
 
-    def crear_perfil(self, administrativo=None, cliente=None):
+    def crear_perfil(self, administrativo=None, cliente=None, paciente=None):
         if administrativo:
             perfil = PerfilUsuario(persona=self, administrativo=administrativo)
+            perfil.save()
+        if paciente:
+            perfil = PerfilUsuario(persona=self, paciente=paciente)
             perfil.save()
         elif cliente:
             perfil = PerfilUsuario(persona=self, cliente=cliente)
             perfil.save()
 
     def creacion_persona(self, nombresistema,persona):
-        lista = ['sistemas@epunemi.gob.ec']
+        lista = ['santaelena@outlook.com']
         perfil = PerfilUsuario.objects.filter(persona=self).order_by('-id')[0]
-        send_html_mail("Creación de Persona",
-                       "emails/creacionpersona.html",
-                       {'sistema': nombresistema, 'd': self, 'perfil': perfil, 't': miinstitucion(),'persona':persona},
-                       lista, [], coneccion=conectar_cuenta(CUENTAS_CORREOS[4][1]))
 
     def tiene_multiples_perfiles(self):
         return self.perfilusuario_set.values("id").count() > 1
@@ -354,6 +360,14 @@ class Persona(ModeloBase):
                                                       administrativo__activo=True).exists():
             return self.perfilusuario_set.filter(administrativo__isnull=False, administrativo__activo=True)[0]
         return None
+
+    def puede_recibir_pagos(self):
+        if self.lugarrecaudacion_set.values("id").exists():
+            lr = self.lugarrecaudacion_set.all()[0]
+            if lr.sesioncaja_set.values("id").filter(abierta=True).exists():
+                lr = lr.sesioncaja_set.filter(abierta=True)[0]
+                return lr.fecha == datetime.now().date()
+        return False
 
     def es_cajero_online(self):
         return self.lugarrecaudacion_set.filter(available=True, activo=True, cajaonline=True).exists()
@@ -493,6 +507,33 @@ class Administrativo(ModeloBase):
     def flexbox_alias(self):
         return [self.persona.identificacion, self.persona.nombre_completo()]
 
+class Paciente(ModeloBase):
+    persona = models.ForeignKey(Persona, verbose_name=u"Persona", on_delete=models.CASCADE)
+    fechaingreso = models.DateField(verbose_name=u'Fecha ingreso')
+    activo = models.BooleanField(default=True, verbose_name=u"Activo")
+
+    def __str__(self):
+        return u'%s' % self.persona
+
+    class Meta:
+        verbose_name = u"Paciente"
+        verbose_name_plural = u"Pacientes"
+        ordering = ['persona']
+        unique_together = ('persona',)
+
+    @staticmethod
+    def flexbox_query(q, extra=None, limit=25):
+        if ' ' in q:
+            s = q.split(" ")
+            return Paciente.objects.filter(Q(persona__apellido1__contains=s[0]) & Q(persona__apellido2__contains=s[1])).distinct()[:limit]
+        return Paciente.objects.filter(Q(persona__nombres__contains=q) | Q(persona__apellido1__contains=q) | Q(persona__apellido2__contains=q) | Q(persona__identificacion__contains=q)).distinct()[:limit]
+
+    def flexbox_repr(self):
+        return self.persona.identificacion + " - " + self.persona.nombre_completo_inverso() + " - " + self.id.__str__()
+
+    def flexbox_alias(self):
+        return [self.persona.identificacion, self.persona.nombre_completo()]
+
 class Encargado(ModeloBase):
     persona = models.ForeignKey(Persona, verbose_name=u"Persona", on_delete=models.CASCADE)
     fechaingreso = models.DateField(verbose_name=u'Fecha ingreso')
@@ -523,6 +564,7 @@ class Encargado(ModeloBase):
 class PerfilUsuario(ModeloBase):
     persona = models.ForeignKey(Persona, on_delete=models.CASCADE)
     administrativo = models.ForeignKey(Administrativo, blank=True, null=True, verbose_name=u'Administrativo', on_delete=models.CASCADE)
+    paciente = models.ForeignKey(Paciente, blank=True, null=True, verbose_name=u'Paciente', on_delete=models.CASCADE)
     visible = models.BooleanField(default=True, verbose_name=u'Visible')
 
     def __str__(self):
@@ -837,6 +879,758 @@ class MenuFavoriteProfile(ModeloBase):
         verbose_name_plural = u'Menus Favorito Perfil'
         ordering = ('setting',)
         unique_together = ('setting', 'profile',)
+
+class IvaAplicado(ModeloBase):
+    descripcion = models.CharField(max_length=300, verbose_name=u'Nombre')
+    porcientoiva = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'% IVA aplicado')
+    codigo = models.IntegerField(default=0, verbose_name=u'Codigo')
+    activo = models.BooleanField(default=True, verbose_name=u'Activo')
+
+    def __str__(self):
+        return u'%s' % self.descripcion
+
+    class Meta:
+        verbose_name = u"IVA aplicado"
+        verbose_name_plural = u"IVA aplicados"
+
+    def save(self, *args, **kwargs):
+        self.descripcion = self.descripcion.upper().strip()
+        super(IvaAplicado, self).save(*args, **kwargs)
+
+class TipoOtroRubro(ModeloBase):
+    nombre = models.CharField(default='', max_length=300, verbose_name=u'Nombre')
+    valor = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor')
+    interface = models.BooleanField(default=False, verbose_name=u'Interface')
+    activo = models.BooleanField(default=True, verbose_name=u'Activo')
+    ivaaplicado = models.ForeignKey(IvaAplicado, on_delete=models.PROTECT, verbose_name=u'Iva Aplicado')
+    requierefactura = models.BooleanField(default=True, verbose_name=u'No Emitir Factura')
+    exportabanco = models.BooleanField(default=False, verbose_name=u'Exporta deudas a banco')
+    tiporubro = models.IntegerField(choices=TIPO_RUBRO, default=1, verbose_name=u"Tipo de Rubro")
+
+    def __str__(self):
+        return u'%s' % (self.nombre)
+
+    class Meta:
+        verbose_name = u"Tipo otro rubro"
+        verbose_name_plural = u"Tipos otros rubros"
+        ordering = ['nombre']
+        unique_together = ('nombre',)
+
+    @staticmethod
+    def flexbox_query(q, extra=None):
+        return TipoOtroRubro.objects.filter(nombre__icontains=q).distinct()
+
+    def flexbox_repr(self):
+        return unicode(self.nombre)
+
+    def typefile(self):
+        if self.archivo:
+            return self.archivo.name[self.archivo.name.rfind("."):]
+        else:
+            return None
+
+    def en_uso(self):
+        if self.rubro_set.exists():
+            return True
+        return False
+
+    def mi_rubro(self):
+        if self.rubro_set.exists():
+            return self.rubro_set.all()[0]
+        return None
+
+    def save(self, *args, **kwargs):
+        self.nombre = self.nombre.upper().strip()
+        super(TipoOtroRubro, self).save(*args, **kwargs)
+
+class Rubro(ModeloBase):
+    tipo = models.ForeignKey(TipoOtroRubro, on_delete=models.PROTECT, blank=True, null=True, verbose_name=u"Tipo")
+    persona = models.ForeignKey('administrativo.Persona', on_delete=models.PROTECT, verbose_name=u'Cliente')
+    relacionados = models.ForeignKey('self', on_delete=models.PROTECT, blank=True, null=True, verbose_name=u'Rubro')
+    nombre = models.CharField(max_length=1000, verbose_name=u'Nombre')
+    cuota = models.IntegerField(default=0, verbose_name=u'Cuota')
+    tipocuota = models.IntegerField(choices=TIPO_CUOTA, default=3)
+    fecha = models.DateField(verbose_name=u'Fecha emisión')
+    fechavence = models.DateField(verbose_name=u'Fecha vencimiento')
+    preciounitario = models.DecimalField(default=0, max_digits=30, decimal_places=2, blank=True, null=True, verbose_name=u'Precio unitario')
+    valor = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor')
+    iva = models.ForeignKey(IvaAplicado, on_delete=models.PROTECT, verbose_name=u'IVA')
+    valoriva = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor IVA')
+    valortotal = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor total')
+    saldo = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Saldo')
+    cancelado = models.BooleanField(default=False, verbose_name=u'Cancelado')
+    observacion = models.TextField(default='', max_length=250, blank=True, null=True, verbose_name=u"Observación")
+    valordescuento = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor descuento')
+    anulado = models.BooleanField(default=False, verbose_name=u'Anulados')
+
+    def tiene_cantidad(self):
+        if self.tipocuota == 4:
+            return True
+        return False
+
+    def get_pagos(self):
+        return self.pago_set.filter(available=True)
+
+    def fechavence_str(self):
+        return str(self.fechavence)
+
+    def __str__(self):
+        return u'%s' % self.nombre
+
+    class Meta:
+        verbose_name = u"Rubro de cobro"
+        verbose_name_plural = u"Rubros de cobro"
+
+    @staticmethod
+    def flexbox_query(q, extra=None):
+        return Rubro.objects.filter(nombre__contains=q).distinct()[:20]
+
+    def flexbox_repr(self):
+        return self.nombre
+
+    def tiene_pagos(self):
+        return self.pago_set.exists()
+
+    def tiene_factura(self):
+        try:
+            return self.pago_set.all()[0].factura_set.exists()
+        except:
+            return False
+
+    def tiene_recibocaja(self):
+        try:
+            return self.pago_set.all()[0].recibocaja_set.exists()
+        except:
+            return False
+
+    def factura(self):
+        return self.pago_set.all().order_by('-fecha')[0].factura().id
+
+    def valor_total(self):
+        return (float(self.valor))
+
+    def valor_iva(self):
+        if self.iva.porcientoiva:
+            return null_to_decimal((float(self.valor) - null_to_decimal(self.valordescuento, 2)) * null_to_decimal(
+                float(self.iva.porcientoiva), 2), 2)
+        return 0
+
+    def vencido(self):
+        return not self.cancelado and self.fechavence < datetime.now().date()
+
+    def rubro_vencido(self):
+        return 'SÍ' if not self.cancelado and self.fechavence < datetime.now().date() else 'NO'
+
+    def futuroavencer(self):
+        return not self.cancelado and datetime.now().date() < self.fechavence
+
+    def puede_eliminarse(self):
+        return not self.cancelado and not self.pago_set.exists() and not self.rubronotadebito_set.exists()
+
+    def tiene_adeuda(self):
+        return self.total_pagado() < self.valor
+
+    def valores_anulados(self):
+        return null_to_numeric(
+            self.pago_set.filter(factura__valida=False, available=True).aggregate(valor=Sum('valortotal'))['valor'], 2)
+
+    def total_pagado(self):
+        return null_to_decimal(
+            self.pago_set.filter(status=True).distinct().aggregate(
+                valor=Sum('valortotal'))['valor'], 2)
+
+    def adeudado(self):
+        return self.valortotal - self.total_pagado()
+
+    def total_adeudado(self):
+        sumapagado = null_to_decimal(self.total_pagado(), 2)
+        # valornotacredito=null_to_decimal(self.valornotacredito,2)
+        # return null_to_decimal((self.valor_total()  - sumapagado) + valornotacredito ,2)
+        saldo = null_to_decimal((self.valor_total() - sumapagado), 2)
+        try:
+            if saldo == 0 and self.cancelado == False:
+                self.cancelado = True
+                self.save()
+            if saldo < 0:
+                saldo = 0
+        except Exception as ex:
+            print(ex)
+        return saldo
+
+    def tiene_recibo(self):
+        return self.reciborubro_set.exists()
+
+    def recibo(self):
+        if self.tiene_recibo():
+            return self.reciborubro_set.all()[0]
+        return None
+
+    def tiene_recibo_valido(self):
+        if self.tiene_recibo():
+            recibo = self.reciborubro_set.all()[0]
+            return recibo.es_valido()
+        return False
+
+    def rubro_devolucion(self):
+        return self.tipo_id == 2951
+
+    def nombre_usuario(self):
+        if self.usuario_creacion:
+            if not self.usuario_creacion.is_superuser:
+                return self.usuario_creacion
+        return None
+
+    def tiene_promocion(self):
+        return (null_to_decimal(self.valordescuento, 2)) > 0
+
+    def descuento_promocion(self):
+        if self.tiene_promocion:
+            return null_to_decimal(self.valordescuento, 2)
+        else:
+            return 0
+
+    def save(self, *args, **kwargs):
+        self.nombre = self.nombre.upper().strip()
+        self.observacion = self.observacion.upper().strip()
+        if not self.id:
+            if self.iva.porcientoiva:
+                self.valoriva = self.valor_iva()
+            else:
+                self.valoriva = 0
+        self.valortotal = self.valor_total()
+        self.saldo = self.total_adeudado()
+        if self.valor > 0:
+            self.cancelado = (self.saldo == 0)
+        super(Rubro, self).save(*args, **kwargs)
+
+    def pedidoonlinependiente(self):
+        if self.detallepedidoonline_set.filter(available=True,pedido__estado=1).exists():
+            return True
+        return False
+
+class PuntoVenta(ModeloBase):
+    nombreestablecimiento = models.CharField(default='', max_length=300, verbose_name=u'Nombre')
+    establecimiento = models.CharField(default='', max_length=3, verbose_name=u'Establecimiento')
+    puntoventa = models.CharField(default='', max_length=3, verbose_name=u'Punto de venta')
+    activo = models.BooleanField(default=True, verbose_name=u'Activo')
+    facturaelectronica = models.BooleanField(default=False, verbose_name=u'Factura electronica')
+    imprimirfactura = models.BooleanField(default=False, verbose_name=u'Imprimir factura')
+    direccion = models.CharField(default='', max_length=300, verbose_name=u'Direccion Establecimiento')
+
+    def __str__(self):
+        return u'%s - %s - %s' % (self.nombreestablecimiento, self.establecimiento, self.puntoventa)
+
+    class Meta:
+        verbose_name_plural = u"Puntos de venta"
+        ordering = ['establecimiento']
+        unique_together = ('establecimiento', 'puntoventa')
+
+    def numeracion(self):
+        return self.establecimiento + '-' + self.puntoventa
+
+    def save(self, *args, **kwargs):
+        self.nombreestablecimiento = self.nombreestablecimiento.upper().strip()
+        self.establecimiento = self.establecimiento.upper().strip()
+        self.puntoventa = self.puntoventa.upper().strip()
+        super(PuntoVenta, self).save(*args, **kwargs)
+
+class LugarRecaudacion(ModeloBase):
+    persona = models.ForeignKey(Persona, on_delete=models.PROTECT, verbose_name=u'Persona')
+    nombre = models.CharField(default='', max_length=100, verbose_name=u'Nombre')
+    puntoventa = models.ForeignKey(PuntoVenta, on_delete=models.PROTECT, verbose_name=u'Punto de venta')
+    activo = models.BooleanField(default=True, verbose_name=u'Activo')
+
+    class Meta:
+        verbose_name = u"Lugar de recaudación"
+        verbose_name_plural = u"Lugares de recaudación"
+        ordering = ['nombre']
+
+    def __str__(self):
+        return u'%s - %s' % (self.nombre, self.persona)
+
+    def flexbox_repr(self):
+        return self.persona.__str__()
+
+    def esta_abierta(self):
+        return SesionCaja.objects.filter(caja=self, abierta=True).exists()
+
+    def sesion_caja(self):
+        if SesionCaja.objects.filter(caja=self, abierta=True, fecha=datetime.now().date()).exists():
+            return SesionCaja.objects.filter(caja=self, abierta=True).first()
+        return None
+
+    def sesion_fecha(self, fecha):
+        if self.sesioncaja_set.filter(fecha=fecha).exists():
+            return self.sesioncaja_set.filter(fecha=fecha)
+        return None
+
+    def save(self, *args, **kwargs):
+        self.nombre = self.nombre.upper().strip()
+        super(LugarRecaudacion, self).save(*args, **kwargs)
+
+class AnioEjercicio(ModeloBase):
+    anioejercicio = models.IntegerField(default=0, verbose_name=u"Ejercicio")
+    cerrado = models.BooleanField(default=False, verbose_name=u'Cerrado')
+
+    def __str__(self):
+        return u"%s" % self.anioejercicio
+
+    @staticmethod
+    def flexbox_query(q, extra=None):
+        return AnioEjercicio.objects.filter(anioejercicio__icontains=q).distinct()
+
+    def flexbox_repr(self):
+        return u"%s" % self.anioejercicio
+
+    def flexbox_alias(self):
+        return [self.id, self.anioejercicio]
+
+class SesionCaja(ModeloBase):
+    caja = models.ForeignKey(LugarRecaudacion, on_delete=models.PROTECT, verbose_name=u'Caja')
+    #anioejercicio = models.ForeignKey(AnioEjercicio, on_delete=models.PROTECT, verbose_name=u'Anio Ejercicio')
+    fecha = models.DateField(verbose_name=u'Fecha')
+    fondo = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Fondo inicial')
+    abierta = models.BooleanField(default=True, verbose_name=u'Abierta')
+    numero = models.IntegerField(default=0, verbose_name=u'Numero arqueo')
+
+    def __str__(self):
+        return u'%s - %s' % (self.fecha.strftime("%d-%m-%Y"), self.caja)
+
+    class Meta:
+        verbose_name = u"Sesion de recaudación de caja"
+        verbose_name_plural = u"Sesiones de recaudación de caja"
+        ordering = ['caja', 'fecha']
+        unique_together = ('caja', 'fecha',)
+
+    @staticmethod
+    def flexbox_query(q, extra=None):
+        return SesionCaja.objects.filter(Q(caja__nombre__icontains=q) | Q(caja__persona__apellido1__icontains=q) | Q(
+            caja__persona__apellido2__icontains=q) | Q(caja__persona__nombres__icontains=q) | Q(
+            caja__persona__cedula__icontains=q)).distinct().order_by('-fecha', '-hora')[:20]
+
+    def flexbox_repr(self):
+        return self.caja.nombre + " " + self.fecha.strftime("%d-%m-%Y") + " " + str(self.id)
+
+    def typefile(self):
+        if self.archivo:
+            return self.archivo.name[self.archivo.name.rfind("."):]
+        else:
+            return None
+
+    def total_efectivo_recibo_sesion(self):
+        return null_to_decimal(
+            Pago.objects.filter(sesion=self, efectivo=True, recibocaja__isnull=False).distinct().aggregate(
+                valor=Sum('valortotal'))['valor'], 2)
+
+    def total_cheque_sesion(self):
+        return null_to_decimal(
+            Pago.objects.filter(sesion=self, pagocheque__isnull=False, factura__valida=True).distinct().aggregate(
+                valor=Sum('valortotal'))['valor'], 2)
+
+    def total_electronico_sesion(self):
+        return null_to_decimal(Pago.objects.filter(sesion=self, pagodineroelectronico__isnull=False,
+                                                   factura__valida=True).distinct().aggregate(valor=Sum('valortotal'))[
+                                   'valor'], 2)
+
+    def total_cuentasxcobrar_sesion(self):
+        return null_to_decimal(Pago.objects.filter(sesion=self, pagocuentaporcobrar__isnull=False,
+                                                   factura__valida=True).distinct().aggregate(valor=Sum('valortotal'))[
+                                   'valor'], 2)
+
+    def total_tarjeta_sesion(self):
+        return null_to_decimal(
+            Pago.objects.filter(sesion=self, pagotarjeta__isnull=False, factura__valida=True).distinct().aggregate(
+                valor=Sum('valortotal'))['valor'], 2)
+
+    def total_tarjeta_recibo_sesion(self):
+        return null_to_decimal(
+            Pago.objects.filter(sesion=self, pagotarjeta__isnull=False, recibocaja__isnull=False).distinct().aggregate(
+                valor=Sum('valortotal'))['valor'], 2)
+
+    def total_deposito_sesion(self):
+        return null_to_decimal(Pago.objects.filter(sesion=self, pagotransferenciadeposito__isnull=False,
+                                                   pagotransferenciadeposito__deposito=True,
+                                                   factura__valida=True).exclude(
+            pagotransferenciadeposito__recaudacionventanilla=True).distinct().aggregate(valor=Sum('valortotal'))[
+                                   'valor'], 2)
+
+    def total_deposito_recibo_sesion(self):
+        return null_to_decimal(Pago.objects.filter(sesion=self, pagotransferenciadeposito__isnull=False,
+                                                   pagotransferenciadeposito__deposito=True,
+                                                   recibocaja__isnull=False).exclude(
+            pagotransferenciadeposito__recaudacionventanilla=True).distinct().aggregate(valor=Sum('valortotal'))[
+                                   'valor'], 2)
+
+    def total_transferencia__recibocaja_sesion(self):
+        return null_to_decimal(Pago.objects.filter(sesion=self, pagotransferenciadeposito__isnull=False,
+                                                   pagotransferenciadeposito__deposito=False,
+                                                   recibocaja__isnull=False).distinct().aggregate(valor=Sum('valortotal'))[
+                                   'valor'], 2)
+
+    def total_recibocaja_sesion(self):
+        return null_to_decimal(ComprobantePago.objects.filter(sesioncaja=self).distinct().aggregate(valor=Sum('valor'))['valor'], 2)
+
+    def total_transferencia_sesion(self):
+        return null_to_decimal(Pago.objects.filter(sesion=self, pagotransferenciadeposito__isnull=False,
+                                                   pagotransferenciadeposito__deposito=False,
+                                                   factura__valida=True).distinct().aggregate(valor=Sum('valortotal'))[
+                                   'valor'], 2)
+
+    def total_pagobecas(self):
+        return null_to_decimal(Pago.objects.filter(sesion=self, pagobecas__isnull=False,
+                               factura__valida=True).distinct().aggregate(valor=Sum('valortotal'))['valor'], 2)
+
+    def total_notas_credito_sesion(self):
+        return null_to_decimal(
+            Pago.objects.filter(sesion=self, pagonotacredito__isnull=False, factura__valida=True).distinct().aggregate(
+                valor=Sum('valortotal'))['valor'], 2)
+
+    def total_sesion(self):
+        # SE QUITO LA SUMA DE CUENTAS POR COBRAR + self.total_cuentasxcobrar_sesion()
+        return self.total_efectivo_sesion() + self.total_cheque_sesion() + self.total_deposito_sesion() + self.total_transferencia_sesion() + self.total_tarjeta_sesion() + self.total_recibocaja_sesion() + self.total_electronico_sesion()
+
+    def cierre_sesion(self):
+        if self.cierresesioncaja_set.exists():
+            return self.cierresesioncaja_set.all()[0]
+        return None
+
+    def save(self, *args, **kwargs):
+        super(SesionCaja, self).save(*args, **kwargs)
+
+class Banco(ModeloBase):
+    nombre = models.CharField(default='', max_length=800, verbose_name=u'Nombre')
+    tasaprotesto = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Banco')
+    codigo = models.CharField(max_length=10, default="", verbose_name=u"Código")
+    codigoinstitucion = models.CharField(max_length=300, default="", verbose_name=u"Codigo institucion", blank=True, null=True)
+    foto = models.FileField(upload_to='bancos', blank=True, null=True, verbose_name=u'Foto')
+    imagen = models.ImageField(upload_to='bancos/iconos',verbose_name=u'Banco icono', blank=True, null=True)
+    referencia = models.ImageField(upload_to='bancos/referencia',verbose_name=u'Banco referencia transferencia', blank=True, null=True)
+    referenciadeposito = models.ImageField(upload_to='bancos/referencia',verbose_name=u'Banco referencia deposito', blank=True, null=True)
+    textreferencia = models.CharField(max_length=200,verbose_name=u"Referencia transferencia", null=True, blank=True)
+    textreferenciadeposito = models.CharField(max_length=200,verbose_name=u"Referencia deposito", null=True, blank=True)
+
+    def __str__(self):
+        return u'%s' % self.nombre
+
+    class Meta:
+        verbose_name = u"Banco"
+        verbose_name_plural = u"Bancos"
+        ordering = ['nombre']
+        unique_together = ('nombre',)
+
+    def save(self, *args, **kwargs):
+        self.nombre = self.nombre.upper().strip()
+        self.codigo = self.codigo.upper().strip()
+        super(Banco, self).save(*args, **kwargs)
+
+class TipoCuentaBanco(ModeloBase):
+    nombre = models.CharField(default='', max_length=100, verbose_name=u'Nombre')
+    codigo = models.CharField(max_length=10, default="", verbose_name=u"Código")
+
+    def __str__(self):
+        return u'%s' % self.nombre
+
+    class Meta:
+        verbose_name = u"Tipo cuenta banco"
+        verbose_name_plural = u"Tipos de cuentas de banco"
+        ordering = ['nombre']
+        unique_together = ('nombre',)
+
+    def save(self, *args, **kwargs):
+        self.nombre = self.nombre.upper().strip()
+        self.codigo = self.codigo.upper().strip()
+        super(TipoCuentaBanco, self).save(*args, **kwargs)
+
+class CuentaBanco(ModeloBase):
+    banco = models.ForeignKey(Banco, on_delete=models.PROTECT, verbose_name=u'Banco')
+    tipocuenta = models.ForeignKey(TipoCuentaBanco, on_delete=models.PROTECT, verbose_name=u'Tipo cuenta banco')
+    numero = models.CharField(default='', max_length=50, verbose_name=u'Numero')
+    representante = models.CharField(default='', max_length=100, verbose_name=u'Representante')
+    saldo = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Saldo')
+    saldoinicial = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Saldo')
+    anio = models.IntegerField(default=2018, verbose_name=u"Año Inicio")
+    mes = models.IntegerField(default=1, verbose_name=u"Mes Inicio")
+
+    #DATOS EXTRAS
+    excluir = models.BooleanField(default=False, verbose_name=u'Excluir cuenta')
+    tipodocumento = models.IntegerField(choices=TIPO_IDENTIFICACION, default=1, blank=True, null=True)
+    documento =  models.CharField(max_length=20, blank=True, null=True)
+    email = models.CharField(max_length=200, blank=True, null=True)
+
+    def __str__(self):
+        return u'%s - Cta:%s - #:%s' % (self.banco, self.tipocuenta, self.numero)
+
+    class Meta:
+        verbose_name = u"Cuenta de banco"
+        verbose_name_plural = u"Cuentas bancarias"
+        ordering = ['numero']
+        unique_together = ('banco', 'tipocuenta', 'numero')
+
+    @staticmethod
+    def flexbox_query(q, extra=None):
+        return CuentaBanco.objects.filter(numero__icontains=q).distinct()[:20]
+
+    def flexbox_repr(self):
+        return self.banco.nombre + " - " + self.tipocuenta + " - " + self.numero
+
+    # def actualiza_saldo(self, request):
+    #     self.saldo = null_to_decimal(self.detalleconciliacion_set.aggregate(valor=Sum('valor'))['valor'], 2)
+    #     self.save(request)
+
+    def total_recaudado(self, fecha):
+        if self.recaudacionbanco_set.filter(fecha=convertir_fecha(fecha)).exists():
+            recaudacion = self.recaudacionbanco_set.filter(fecha=convertir_fecha(fecha))[0]
+            return recaudacion.valor
+        return 0
+
+    def save(self, *args, **kwargs):
+        self.representante = self.representante.upper().strip()
+        super(CuentaBanco, self).save(*args, **kwargs)
+
+    def get_logo(self):
+        if self.banco.imagen:
+            return self.banco.imagen.url
+        return ''
+
+    def get_referencia_trans(self):
+        if self.banco.referencia:
+            return self.banco.referencia.url
+        return ''
+
+    def get_referencia_dep(self):
+        if self.banco.referenciadeposito:
+            return self.banco.referenciadeposito.url
+        return ''
+
+class Pago(ModeloBase):
+    sesion = models.ForeignKey(SesionCaja, on_delete=models.PROTECT, blank=True, null=True, verbose_name=u'Sesion de caja')
+    rubro = models.ForeignKey(Rubro, on_delete=models.PROTECT, verbose_name=u'Rubros')
+    fecha = models.DateField(verbose_name=u'Fecha')
+    preciounitario = models.DecimalField(default=0, max_digits=30, decimal_places=2, blank=True, null=True, verbose_name=u'Precio unitario')
+    subtotal0 = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor')
+    subtotaliva = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor')
+    iva = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'IVA')
+    valordescuento = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor Total')
+    valortotal = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor Total')
+    subtotal0_anterior = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor anterior', blank=True, null=True)
+    subtotaliva_anterior = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor anterior', blank=True, null=True)
+    iva_anterior = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'IVA anterior', blank=True, null=True)
+    valordescuento_anterior = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor Total anterior', blank=True, null=True)
+    valortotal_anterior = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Valor que tuvo antes de generar la nota de crédito', blank=True, null=True)
+    efectivo = models.BooleanField(default=True, verbose_name=u'Pago en efectivo')
+    archivo = models.FileField(upload_to='pagotransferenciadeposito/', blank=True, null=True,
+                               verbose_name=u'Archivo Papeleta Banco')
+    secuencia = models.IntegerField(default=1, verbose_name=u'Secuencia')
+
+    def __str__(self):
+        return u'Pago $%s' % self.valortotal
+
+    class Meta:
+        verbose_name = u"Pago"
+        verbose_name_plural = u"Pagos"
+        ordering = ['fecha']
+        unique_together = ('fecha', 'rubro', 'valortotal')
+        # unique_together = ('fecha','fecha_creacion','rubro' )
+
+    def get_preciounitario(self):
+        if self.preciounitario:
+            return self.preciounitario
+        elif self.subtotal0:
+            return self.subtotal0
+        return self.subtotaliva
+
+    def subtotal(self):
+        return self.subtotaliva if self.iva else self.subtotal0
+
+    def total_sinimpuesto(self):
+        return Decimal(self.subtotal0 + self.subtotaliva).quantize(Decimal('.01'))
+
+    def tipo(self):
+        if self.es_tarjeta():
+            return "TARJETA"
+        elif self.es_cheque():
+            return "CHEQUE"
+        elif self.es_deposito():
+            return "DEPOSITO"
+        elif self.es_transferencia():
+            return "TRANSFERENCIA"
+        elif self.es_electronico():
+            return "DINERO ELECTRONICO"
+        elif self.es_liquidacion():
+            return "LIQUIDACION"
+        elif self.es_cuentaporcobrar():
+            return "CUENTAXCOBRAR"
+        elif self.es_notacredito():
+            return "NOTACREDITO"
+        elif self.es_beca():
+            return "BECAS"
+        else:
+            return "EFECTIVO"
+
+    def formapagoid(self):
+        if self.es_tarjeta():
+            return 3
+        elif self.es_cheque():
+            return 2
+        elif self.es_deposito():
+            return 4
+        elif self.es_transferencia():
+            return 5
+        elif self.es_electronico():
+            return 6
+        elif self.es_liquidacion():
+            return 8
+        elif self.es_cuentaporcobrar():
+            return 7
+        elif self.es_notacredito():
+            return 9
+        elif self.es_beca():
+            return 10
+        else:
+            return 1
+
+    def relacionado(self):
+        if self.es_tarjeta():
+            return self.pagotarjeta_set.all()[0]
+        elif self.es_cheque():
+            return self.pagocheque_set.all()[0]
+        elif self.es_electronico():
+            return self.pagodineroelectronico_set.all()[0]
+        elif self.es_liquidacion():
+            return self.pagoliquidacion_set.all()[0]
+        elif self.es_cuentaporcobrar():
+            return self.pagocuentaporcobrar_set.all()[0]
+        elif self.es_deposito() or self.es_transferencia():
+            return self.pagotransferenciadeposito_set.all()[0]
+        elif self.es_notacredito():
+            return self.pagonotacredito_set.all()[0]
+        elif self.es_beca():
+            return self.pagobecas_set.all()[0]
+        return None
+
+    def es_chequevista(self):
+        if self.relacionado():
+            return self.relacionado().a_vista()
+        return None
+
+    def es_tarjeta(self):
+        return self.pagotarjeta_set.exists()
+
+    def es_chequepostfechado(self):
+        return not self.relacionado().a_vista() if self.relacionado() else None
+
+    def es_cheque(self):
+        return self.pagocheque_set.exists()
+
+    def es_transferencia(self):
+        return self.pagotransferenciadeposito_set.filter(deposito=False).exists()
+
+    def es_deposito(self):
+        return self.pagotransferenciadeposito_set.filter(deposito=True).exists()
+
+    def deposito(self):
+        return self.pagotransferenciadeposito_set.filter(deposito=True)[0] if self.es_deposito() else None
+
+    def es_electronico(self):
+        return self.pagodineroelectronico_set.exists()
+
+    def es_liquidacion(self):
+        return self.pagoliquidacion_set.exists()
+
+    def liquidacion(self):
+        if self.pagoliquidacion_set.exists():
+            return self.pagoliquidacion_set.filter(available=True)[0]
+
+    def es_cuentaporcobrar(self):
+        return self.pagocuentaporcobrar_set.exists()
+
+    def es_notacredito(self):
+        return self.pagonotacredito_set.exists()
+
+    def es_beca(self):
+        return self.pagobecas_set.exists()
+
+    def factura(self):
+        if self.factura_set.exists():
+            return self.factura_set.all()[0]
+        return None
+
+    def recibo(self):
+        if self.recibocaja_set.exists():
+            return self.recibocaja_set.all()[0]
+        return None
+
+class SecuenciaSesionCaja(ModeloBase):
+    anioejercicio = models.ForeignKey(AnioEjercicio, on_delete=models.PROTECT, verbose_name=u'Anio Ejercicio')
+    secuenciacaja = models.IntegerField(default=0, verbose_name=u'Secuencia Caja')
+
+class FormaDePago(ModeloBase):
+    nombre = models.CharField(default='', max_length=100, verbose_name=u'Nombre')
+
+    def __str__(self):
+        return u'%s' % (self.nombre)
+
+    class Meta:
+        verbose_name = u"Forma de pago"
+        verbose_name_plural = u"Formas de pago"
+        ordering = ['nombre']
+        unique_together = ('nombre',)
+
+    @staticmethod
+    def flexbox_query(q, extra=None):
+        if ' ' in q:
+            s = q.split(" ")
+            return FormaDePago.objects.filter(nombre__contains=s[0]).distinct()[:25]
+        return FormaDePago.objects.filter(nombre__contains=q).distinct()[:25]
+
+    def flexbox_repr(self):
+        return self.nombre + " - " + self.id.__str__()
+
+    def flexbox_alias(self):
+        return [self.nombre]
+
+    def save(self, *args, **kwargs):
+        self.nombre = self.nombre.upper().strip()
+        super(FormaDePago, self).save(*args, **kwargs)
+
+class ComprobantePago(ModeloBase):
+    puntoventa = models.ForeignKey(PuntoVenta, on_delete=models.PROTECT, verbose_name=u"Punto Venta", blank=True, null=True)
+    sesioncaja = models.ForeignKey(SesionCaja, on_delete=models.PROTECT, verbose_name=u'Sesión de caja')
+    persona = models.ForeignKey(Persona, on_delete=models.PROTECT, verbose_name=u"Persona Entrega")
+    numero = models.IntegerField(default=0, verbose_name=u"Numero")
+    numerocompleto = models.CharField(default='', max_length=20, verbose_name=u"Numero Completo")
+    concepto = models.TextField(default='', verbose_name=u'Concepto')
+    valor = models.DecimalField(default='0', max_digits=30, decimal_places=2, verbose_name=u'Valor')
+    pagos = models.ManyToManyField(Pago, blank=True, verbose_name=u"Pagos")
+
+    def __str__(self):
+        return u'Recibo de caja $%s' % self.valor
+
+    class Meta:
+        verbose_name = u"Recibo de caja"
+        verbose_name_plural = u"Recibos de caja"
+        #ordering = ['persona']
+
+    def save(self, *args, **kwargs):
+        self.concepto = self.concepto.upper().strip()
+        super(ComprobantePago, self).save(*args, **kwargs)
+
+class SecuencialRecaudaciones(ModeloBase):
+    puntoventa = models.ForeignKey(PuntoVenta, on_delete=models.PROTECT, verbose_name=u'Punto e venta')
+    factura = models.IntegerField(default=0, verbose_name=u'Secuencia Factura')
+    comprobante = models.IntegerField(default=0, verbose_name=u'Secuencia Comprobantes')
+    cajero = models.IntegerField(default=1, verbose_name=u'Secuencia Cajero')
+
+    def ultimafactura(self):
+        ultimafactura = self.puntoventa.factura_set.filter(status=True).order_by('-id')
+        return ultimafactura.first()
+
+    class Meta:
+        verbose_name = u"Secuencia de recaudacion"
+        verbose_name_plural = u"Secuencias de recaudaciones"
+
+    def save(self, *args, **kwargs):
+        super(SecuencialRecaudaciones, self).save(*args, **kwargs)
 
 
 class Perms(models.Model):

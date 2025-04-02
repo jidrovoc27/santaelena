@@ -152,7 +152,7 @@
 
 .dropdown-item.active {
     background-color: #f5f4f8;
-    color: #034c79;
+    color: #032c80;
     text-decoration: none
 }
 
@@ -164,18 +164,18 @@
     background-color: #e8e7ed;
     background-color: #f5f4f8;
     border-radius: 0;
-    color: #034c79;
+    color: #032c80;
     text-decoration: none
 }
 
 .dropdown-item:focus .dropdown-toggle:after {
-    color: #034c79
+    color: #032c80
 }
 
 .dropdown-item:focus:hover {
     background-color: #f5f4f8;
     border-radius: 0;
-    color: #034c79;
+    color: #032c80;
     text-decoration: none
 }
 
@@ -187,13 +187,13 @@
 }
 
 .dropdown-item:hover.dropdown-toggle:after {
-    color: #034c79
+    color: #032c80
 }
 
 .dropdown-item:hover {
     background-color: #f5f4f8;
     border-radius: 0;
-    color: #034c79;
+    color: #032c80;
     text-decoration: none
 }
 

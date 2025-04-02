@@ -1,13 +1,33 @@
 import os
+from santaelena.settings import STATIC_URL, STATIC_ROOT, MEDIA_URL, MEDIA_ROOT
 from django.db import models
 import datetime
-from datetime import datetime
+from datetime import datetime, date
 from django.core.paginator import Paginator
 from django.db import transaction, connections
 from django.contrib.auth.models import User, Group
 from django import forms
 
 unicode = str
+
+def link_callback(uri, rel):
+    sUrl = STATIC_URL      # Typically /static/
+    sRoot = STATIC_ROOT    # Typically /home/userX/project_static/
+    mUrl = MEDIA_URL       # Typically /static/media/
+    mRoot = MEDIA_ROOT     # Typically /home/userX/project_static/media/
+
+    if uri.startswith(mUrl):
+        path = os.path.join(mRoot, uri.replace(mUrl, ""))
+    elif uri.startswith(sUrl):
+        path = os.path.join(sRoot, uri.replace(sUrl, ""))
+    else:
+        return uri                  # handle absolute uri (ie: http://some.tld/foo.png)
+
+    # make sure that file exists
+    if not os.path.isfile(path):
+        raise Exception('media URI must start with %s or %s' % (sUrl, mUrl))
+
+    return path
 
 
 class ModeloBase(models.Model):
@@ -87,6 +107,20 @@ class MiPaginador(Paginator):
         self.ultima_pagina = True if right < self.num_pages else False
         self.ellipsis_izquierda = left - 1
         self.ellipsis_derecha = right + 1
+
+def convertir_fecha(s):
+    if ':' in s:
+        sep = ':'
+    elif '-' in s:
+        sep = '-'
+    else:
+        sep = '/'
+    return date(int(s.split(sep)[2]), int(s.split(sep)[1]), int(s.split(sep)[0]))
+
+def null_to_numeric(valor, decimales=None):
+    if decimales:
+        return round((valor if valor else 0), decimales)
+    return valor if valor else 0
 
 def null_to_decimal(valor, decimales=None):
     if not decimales is None and not valor is None:
@@ -411,3 +445,26 @@ def resetear_clave(persona):
     user = persona.usuario
     user.set_password(password)
     user.save()
+
+def secuencia_recaudacion(request, puntoventa):
+    from administrativo.models import SecuencialRecaudaciones
+    secuencial_ = SecuencialRecaudaciones.objects.filter(puntoventa=puntoventa, status=True)
+    if not secuencial_.exists():
+        secuencia = SecuencialRecaudaciones(puntoventa=puntoventa)
+        secuencia.save(request)
+        return secuencia
+    else:
+        return secuencial_.first()
+
+def conviert_html_to_pdf(template_src, context_dict):
+    import io as StringIO
+    from xhtml2pdf import pisa
+    from django.template.loader import get_template
+    from django.http import HttpResponse, JsonResponse
+    template = get_template(template_src)
+    html = template.render(context_dict).encode(encoding="UTF-8")
+    result = StringIO.BytesIO()
+    pisaStatus = pisa.CreatePDF(StringIO.BytesIO(html), result, link_callback=link_callback)
+    if not pisaStatus.err:
+        return HttpResponse(result.getvalue(), content_type='application/pdf')
+    return JsonResponse({"result": "bad", "mensaje": u"Problemas al ejecutar el reporte."})

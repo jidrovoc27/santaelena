@@ -1,0 +1,20 @@
+{% extends "ajaxformbs.html" %}
+{% block extraheading %}
+{#    <script type="text/javascript">#}
+{#        $(function(){#}
+{#            $("#id_partida").addClass("validate[required]");#}
+{#        });#}
+{#    </script>#}
+{% endblock %}
+{% block atras %}/tiposrubros{% endblock %}
+{% block titulo %}{{ title }}{% endblock %}
+{% block formaction %}/tiposrubros{% endblock %}
+{% block form-type %}form-horizontal{% endblock %}
+{% block formdestination %}/tiposrubros{% endblock %}
+{% block formwidth %}form-l{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='asignar'/>
+    <input type='hidden' name='id' value='{{ tipootrorubro.id }}'/>
+{% endblock %}
+{% block formback %}/tiposrubros{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

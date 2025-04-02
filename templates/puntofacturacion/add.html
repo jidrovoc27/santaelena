@@ -1,0 +1,58 @@
+{% extends "ajaxformbs.html" %}
+{% block atras %}/puntofacturacion{% endblock %}
+{% block extraheading %}
+    <script type="text/javascript">
+        $(function () {
+                $('#id_persona').select2({
+                    language: {
+                        inputTooShort: function () {
+                            return "Ingresa al menos un caracter...";
+                        },
+                        "noResults": function () {
+                            return "Sin resultados";
+                        },
+                        "searching": function () {
+                            return "Buscando...";
+                        }
+                    },
+                    allowClear: true,
+                    ajax: {
+                        delay: 250,
+                        type: 'POST',
+                        url: '/puntofacturacion',
+                        data: function (params) {
+                            return {
+                                term: params.term,
+                                'action': 'buscar_persona'
+                            };
+                        },
+                        processResults: function (data) {
+                            return {
+                                results: data
+                            };
+                        },
+                    },
+                    placeholder: 'Busca una persona',
+                    minimumInputLength: 1,
+                });
+                {% if action == 'edit' %}
+                    var newOption = new Option('{{ persona.nombre_completo }}', {{ persona.id }}, false, true);
+                    $('#id_persona').append(newOption).trigger('change');
+                {% endif %}
+
+            {% if not lugar.ordenasignacion %}
+                $("#id_ordenasignacion").val('')
+            {% endif %}
+            }
+        );
+    </script>
+{% endblock %}
+{% block formwidth %}form-s{% endblock %}
+{% block titulo %}{{ title }}{% endblock %}
+{% block formaction %}/puntofacturacion{% endblock %}
+{% block formdestination %}/puntofacturacion{% endblock %}
+{% block formextra %}<input type="hidden" value="{{ action }}" name="action">
+    <input type="hidden" value="{{ id }}" name="id">
+{% endblock %}
+{% block formback %}/puntofacturacion{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

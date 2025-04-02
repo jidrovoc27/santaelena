@@ -1,0 +1,143 @@
+{% extends "base_system.html" %}
+{% load humanize %}
+{% load extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function () {
+
+            $("#search").click(function () {
+                var term = $("#searchinput").val().toUpperCase();
+                bloqueointerface();
+                location.href = "/puntofacturacion?s=" + term;
+            });
+
+            $('#searchinput').keyup(function (e) {
+                if (e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+        });
+    </script>
+{% endblock %}
+{% block atras %}/{% endblock %}
+{% block canvas %}
+    <div class='row'>
+        <div class='col-lg-12'>
+            <div class="headtitle">
+                <h3 class="texto-blue">{{ title }}</h3>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-md-6 pb-2">
+            {% if not persona.es_vendedor or persona.usuario.is_superuser %}
+                <a href="{{ request.path }}?action=add" class="btn btn-success"><i class="fa fa-plus"></i> Adicionar</a>
+                <a href="{{ request.path }}?action=puntosventa" class="btn btn-warning"><i
+                        class="fa fa-cash-register"></i> Puntos de Venta</a>
+                <a href="{{ request.path }}?action=secuencial" class="btn btn-primary"><i
+                        class="fa fa-cash-register"></i> Secuencial de Recaudación</a>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <form class="form-search" onsubmit="return busqueda()">
+                <div class="input-group mb-2">
+                    <input class='form-control' type='text' id='searchinput' value='{{ search }}' autocomplete="off"/>
+                    <div class="input-group-append">
+                        <a href="javascript:;" id='search' class='btn btn-info'><i class="fa fa-search"></i> Buscar</a>
+                        {% if search or ids %}
+                            <a href="{{ request.path }}" class='btn btn-warning text-white'><i
+                                    class="fa fa-refresh"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-2">
+        <div class="card-body rounded-3">
+            <div class="table-responsive">
+                <table class='tabla_responsive table table-bordered'>
+                    <thead>
+                    <tr>
+                        <th style="width: 25%; text-align: center">Persona</th>
+                        <th style="width: 30%">Nombre</th>
+                        <th style="width: 10%; text-align: center">Punto de venta</th>
+                        <th style="text-align: center; width: 8%;">Estado</th>
+                        <th style="text-align: center; width: 8%;">Detalle</th>
+                        <th style="text-align: center; width: 5%;">Origen</th>
+                        <th style="text-align: center; width: 5%;">Orden asignación</th>
+                        <th style="text-align: center; width: 5%;"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for lugar in lugares %}
+                        <tr>
+                            <td>{{ lugar.persona }}</td>
+                            <td>{{ lugar.nombre }}</td>
+                            <td style="text-align: center">{{ lugar.puntoventa }}</td>
+                            <td style="text-align: center;">
+                                {% if lugar.activo %}
+                                    <label class="label label-success">ACTIVO</label>
+                                {% else %}
+                                    <label class="label label-important">INACTIVO</label>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if lugar.cajaonline %}
+                                    <label class="label label-success">CAJA ONLINE</label>
+                                {% else %}
+                                    <label class="label label-important">NO</label>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {{ lugar.get_origenrecaudacion_display }}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if lugar.ordenasignacion %}
+                                    {{ lugar.ordenasignacion }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="javascript:void(0);"
+                                   class="btn-icon btn btn-ghost btn-sm rounded-circle dropdown-toggle"
+                                   data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fa fa-ellipsis-v fs-6"></i>
+                                </a>
+                                <ul class="dropdown-menu" x-placement="right-start">
+                                    {% if not persona.es_vendedor or persona.usuario.is_superuser %}
+                                        <li class="dropdown-item">
+                                            <a href="/puntofacturacion?action=edit&id={{ lugar.id|encrypt }}"><i
+                                                    class="fa fa-edit"></i> Editar</a></li>
+                                        <li class="dropdown-item">
+                                            <a href="javascript:;" class="eliminacionmodal"
+                                               nhref="/puntofacturacion?action=desactivar&id={{ lugar.id|encrypt }}"><i
+                                                    class="fa fa-{% if lugar.activo %}power-off{% else %}check{% endif %}"></i>
+                                                {% if lugar.activo %}Desactivar {% else %} Activar {% endif %}</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if persona.usuario.is_superuser %}
+                                        <li class="dropdown-item">
+                                            <a class="eliminacionmodal" href="javascript:;"
+                                               nhref="/puntofacturacion?action=delete&id={{ lugar.id|encrypt }}"><i
+                                                    class="fa fa-remove"></i> Eliminar </a></li>
+                                    {% endif %}
+                                </ul>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not lugares %}
+                        <tr>
+                            <td colspan="10">NO EXISTEN LUGARES</td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            {% include 'paginacionb4.html' %}
+        </div>
+    </div>
+
+{% endblock %}

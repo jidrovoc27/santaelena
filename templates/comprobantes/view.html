@@ -1,0 +1,104 @@
+{% extends "comprobantes/basetv.html" %}
+{% load extras %}
+{% block atras %}/{% endblock %}
+{% block extraheading %}
+{% endblock %}
+{% block content %}
+
+    <div class="card mb-3 mt-1">
+        <div class="card-header">
+            <h4 class="mb-0"><b><i class="fa fa-cubes"></i> {{ title }}</b></h4>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="mt-0 pt-0">
+            <div class="col-lg-12 pb-2">
+                <a href="javascript:void(0)" onclick="formModal('','Adicionar venta','add', true)"
+                   class="btn btn-success"><i class="fa fa-plus"></i> Adicionar venta</a>
+            </div>
+        </div>
+    </div>
+
+    <form method="GET">
+        <div class="row">
+            <div class="mt-0 pt-0">
+                <input type="hidden">
+                <div class="col-md-12 col-sm-12">
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" placeholder="Buscar por nombre de paciente."
+                               aria-label="Buscar"
+                               aria-describedby="button-addon2" name="s" value="{{ s }}">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit" id="button-addon2"><i
+                                    class="fa fa-search"></i></button>
+                            {% if url_vars %}
+                                <a title="Ver todo" href="{{ request.path }}?"
+                                   class="btn btn-default tr">
+                                    <i class="fas fa-sync-alt"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card mb-4">
+        <div class="card-body rounded-3">
+            <div class="table-responsive">
+                <table class='tabla_responsive table table-bordered table-striped'>
+                    <thead class="table-light">
+                    <tr>
+                        <th style="text-align: center;">N°</th>
+                        <th style="text-align: center;">Persona</th>
+                        <th style="text-align: center;">Fecha</th>
+                        <th style="text-align: center;">Valor</th>
+                        <th style="text-align: center;">Recaudado por</th>
+                        <th style="text-align: center; width: 5%"></th>
+                    </tr>
+
+                    </thead>
+                    <tbody>
+                    {% for l in comprobantes %}
+                        <tr>
+                            <td style="text-align: center;">{{ l.numerocompleto }}</td>
+                            <td style="text-align: center;">{{ l.persona }}</td>
+                            <td style="text-align: center;">{{ l.fecha_creacion }}</td>
+                            <td style="text-align: center;">${{ l.valor | floatformat:2 }}</td>
+                            <td style="text-align: center;">
+                                {{ l.sesioncaja.caja.persona.usuario }}
+                            </td>
+                            <td style="text-align: center; width: 5%;">
+                                <a href="javascript:void(0);" class="btn-icon btn btn-ghost btn-sm rounded-circle"
+                                   data-bs-toggle="dropdown" data-offset="-140" aria-haspopup="true"
+                                   aria-expanded="false">
+                                    <i class="fa fa-ellipsis-v" aria-hidden="true"></i></a>
+                                <div class="dropdown-menu" style="">
+{#                                    <a class="dropdown-item"#}
+{#                                       href="{{ request.path }}?action=verstock&id={{ l.id }}">#}
+{#                                        <i class="fa fa-bars dropdown-item-icon" aria-hidden="true"></i>#}
+{#                                        Ver Stock#}
+{#                                    </a>#}
+{#                                    <a class="dropdown-item" href="javascript:void(0);"#}
+{#                                       onclick="formModal('{{ l.id }}','Editar: {{ l.nombre }}', 'edit', true)">#}
+{#                                        <i class="fa fa-pen-to-square dropdown-item-icon" aria-hidden="true"></i>#}
+{#                                        Editar#}
+{#                                    </a>#}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <td colspan="9" style="text-align: center;">NO EXISTEN COMPROBANTES</td>
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+     {% include 'paginacionb4.html' %}
+    </div>
+{% endblock %}

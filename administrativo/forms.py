@@ -144,6 +144,37 @@ class AdministrativosForm(FormModeloBase):
     parroquianacimiento = forms.ModelChoiceField(label=u"Parroquia nacimiento", queryset=Parroquia.objects.all(),
                                                  required=False, widget=forms.Select(attrs={'class':'form-control', 'col': '12'}))
 
+class PacientesForm(FormModeloBase):
+    nombres = forms.CharField(label=u"Nombres", max_length=1000, widget=forms.TextInput(attrs={'class':'form-control','col': '12'}))
+    apellido1 = forms.CharField(label=u"1er Apellido", max_length=1000, widget=forms.TextInput(attrs={'class':'form-control', 'col': '6'}))
+    apellido2 = forms.CharField(label=u"2do Apellido", max_length=1000, required=True,
+                                widget=forms.TextInput(attrs={'class':'form-control', 'col': '6'}))
+    identificacion = forms.CharField(label=u"Identificación", max_length=13, required=True,
+                             widget=forms.TextInput(attrs={'class': 'imp-identificacion form-control', 'col': '6'}))
+    nacionalidad = forms.CharField(label=u"Nacionalidad", max_length=100, required=True,
+                                   widget=forms.TextInput(attrs={'class': 'form-control', 'col': '12'}))
+    nacimiento = forms.DateField(label=u"Fecha Nacimiento", initial=datetime.now().date(),
+                                 widget=DateTimeInput(format='%d-%m-%Y', attrs={'class': 'selectorfecha form-control', 'col': '6'}),
+                                 required=True)
+    sexo = forms.ModelChoiceField(label=u"Sexo", queryset=Sexo.objects.filter(status=True),
+                                  widget=forms.Select(attrs={'class':'form-control', 'col': '6'}))
+    telefono = forms.CharField(label=u"Teléfono Movil", max_length=100, required=True,
+                               widget=forms.TextInput(attrs={'class': 'imp-25 form-control', 'col': '6'}))
+    telefono_conv = forms.CharField(label=u"Teléfono Fijo", max_length=100, required=False,
+                                    widget=forms.TextInput(attrs={'class': 'imp-25 form-control', 'col': '6'}))
+    email = forms.CharField(label=u"Correo Electronico", max_length=1000, required=True,
+                            widget=forms.TextInput(attrs={'class': 'imp-50 form-control'}))
+    sector = forms.CharField(label=u"Sector", max_length=1000, required=False,
+                             widget=forms.TextInput(attrs={'class': 'imp-50 form-control'}))
+    direccion = forms.CharField(label=u"Calle Principal", max_length=1000, required=False,
+                                widget=forms.TextInput(attrs={'class': 'imp-75 form-control'}))
+    direccion2 = forms.CharField(label=u"Calle Secundaria", max_length=1000, required=False,
+                                 widget=forms.TextInput(attrs={'class': 'imp-75 form-control'}))
+    numeroresidencia = forms.CharField(label=u"Numero Domicilio", max_length=1000, required=False,
+                                    widget=forms.TextInput(attrs={'class': 'imp-25 form-control'}))
+    referencia = forms.CharField(label=u"Referencia", max_length=1000, required=False,
+                                widget=forms.TextInput(attrs={'class': 'imp-75 form-control'}))
+
 class GrupoUsuarioForm(forms.Form):
     grupo = forms.ModelChoiceField(label=u'Grupo', queryset=Group.objects.all().order_by('name'), required=False, widget=forms.Select(attrs={'class': 'imp-100'}))
 
@@ -223,3 +254,39 @@ class GrupoPermisoForm(forms.Form):
         for field in self.fields:
             self.fields[field].widget.attrs['readonly'] = True
             self.fields[field].widget.attrs['disabled'] = True
+
+
+class TipoOtroRubroForm(forms.Form):
+    nombre = forms.CharField(label=u'Nombre', max_length=250, required=False,
+                             widget=forms.TextInput(attrs={'formwidth': '100%'}))
+    tiporubro = forms.ChoiceField(choices=TIPO_RUBRO, required=False, label=u'Tipo Rubro', widget=forms.Select())
+    ivaaplicado = forms.ModelChoiceField(IvaAplicado.objects.filter(status=True), required=False, label=u'Iva Aplicado',
+                                         widget=forms.Select(attrs={'formwidth': '50%'}))
+    valor = forms.DecimalField(label=u"Valor por defecto", required=False, initial="0.00",
+                               widget=forms.TextInput(attrs={'class': 'imp-moneda', 'decimal': '2'}))
+    activo = forms.BooleanField(initial=False, label=u'Activo', required=False)
+    requierefactura = forms.BooleanField(initial=False, label=u'No Emitir Factura', required=False)
+
+class LugarRecaudacionForm(forms.Form):
+    nombre = forms.CharField(label=u'Nombre', widget=forms.TextInput(attrs={'class': 'imp-100'}))
+    puntoventa = forms.ModelChoiceField(PuntoVenta.objects.filter(status=True), required=False, label=u'Punto de Venta', widget=forms.Select(attrs={'class': 'imp-50'}))
+    persona = forms.CharField(required=False, label=u'Persona', widget=forms.Select(attrs={'class': 'imp-50', 'style': "width: 100%"}))
+    activo = forms.BooleanField(initial=True, label=u'Activo', required=False)
+
+class PuntoVentaForm(FormModeloBase):
+    nombreestablecimiento = forms.CharField(label=u'Nombre', max_length=500, widget=forms.TextInput(attrs={'col': '12'}), required=True)
+    direccion = forms.CharField(label=u'Dirección', max_length=500, widget=forms.TextInput(attrs={'col': '12'}), required=True)
+    establecimiento = forms.CharField(label=u'Establecimiento', max_length=500, widget=forms.TextInput(attrs={'col': '6'}), required=True)
+    puntoventa = forms.CharField(label=u'Punto de Venta', max_length=500, widget=forms.TextInput(attrs={'col': '6'}), required=True)
+    activo = forms.BooleanField(initial=False, widget=forms.CheckboxInput(attrs={'col':'6'}), label=u'Activo?', required=False)
+    facturaelectronica = forms.BooleanField(initial=False, widget=forms.CheckboxInput(attrs={'col':'6'}), label=u'Emite Facturación Electroncia?', required=False)
+    imprimirfactura = forms.BooleanField(initial=False, widget=forms.CheckboxInput(attrs={'col':'6'}), label=u'Imprime Facturas?', required=False)
+
+class SecuencialRecaudacionesForm(FormModeloBase):
+    puntoventa = forms.ModelChoiceField(label=u"Puntos de Ventas", queryset=PuntoVenta.objects.filter(status=True, activo=True).order_by('establecimiento'), required=True,  widget=forms.Select(attrs={'col': '12'}))
+    comprobante = forms.IntegerField(initial=0, label=u'Secuencia Comprobantes', required=False, widget=forms.TextInput(attrs={'col': '6', 'class': 'imp-numbersmall', 'decimal': '0'}))
+    cajero = forms.IntegerField(initial=0, label=u'Secuencia Cajero', required=False, widget=forms.TextInput(attrs={'col': '6', 'class': 'imp-numbersmall', 'decimal': '0'}))
+
+class VentaForm(FormModeloBase):
+    persona = forms.CharField(required=False, label=u'Persona', widget=forms.Select(attrs={'class': 'form-control', 'col': '12'}))
+    rubro = forms.ModelChoiceField(TipoOtroRubro.objects.filter(status=True), required=False, label=u'Rubro', widget=forms.Select(attrs={'class': 'form-control', 'col': '9'}))

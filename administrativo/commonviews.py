@@ -318,7 +318,7 @@ def panel(request):
         return JsonResponse({"result": "bad", "mensaje": u"Solicitud Incorrecta."})
     else:
         # hoy = datetime.now()
-        data['title'] = 'INICIO | EPUNEMI'
+        data['title'] = 'SANTA ELENA'
         if 'action' in request.GET:
 
             action = request.GET['action']

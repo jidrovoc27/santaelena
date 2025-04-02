@@ -108,7 +108,7 @@ a.text-body:hover, a.text-muted:hover, a:hover .text-primary-hover {
 }
 
 .bg-colors-gradient {
-    background: linear-gradient(280.04deg, #034c79, #9fdafd 48.96%, #c9e9ff);
+    background: linear-gradient(280.04deg, #032c80, #9fdafd 48.96%, #c9e9ff);
 }
 
 @media (max-width: 1200px) {
@@ -29073,7 +29073,7 @@ textarea.form-control-lg {
 }
 
 .navbar-default {
-    background-color: #034c79;
+    background-color: #032c80;
     box-shadow: 0 1px 3px rgba(3, 0, 71, .09)
 }
 

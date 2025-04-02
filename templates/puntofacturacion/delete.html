@@ -1,0 +1,10 @@
+{% extends "ajaxdesactivardinamicbs.html" %}
+{% block titulo %}{{ title }}{% endblock %}
+{% block formdestination %}/puntofacturacion{% endblock %}
+{% block atras %}/puntofacturacion{% endblock %}
+{% block formaction %}/puntofacturacion{% endblock %}
+{% block formactionvalue %}{{action}}{% endblock %}
+{% block formobjectid %}{{ lugarrecaudacion.id }}{% endblock %}
+{% block formobjectrepr %}{{ lugarrecaudacion }}{% endblock %}
+{% block formestado %}{{ estado }}{% endblock %}
+{% block botonlabel %}{{ estado }}{% endblock %}
