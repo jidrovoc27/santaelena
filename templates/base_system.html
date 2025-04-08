@@ -457,6 +457,51 @@
         })
     }
 
+    function ejecutar_accion(pk, nombre, accion, url, titulo) {
+            Swal.fire({
+                title: `${titulo}\n ${nombre}`,
+                text: "Esta acción es irreversible",
+                type: 'info',
+                showCancelButton: true,
+                allowOutsideClick: false,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Si, deseo hacerlo',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.value) {
+                    {#bloqueointerface();#}
+                    $.ajax({
+                        type: "POST",
+                        url: url,
+                        data: {action: accion, id: pk,},
+                        success: function (data) {
+                            if (data.result == true) {
+                                location.reload();
+                            } else {
+                                Swal.fire({
+                                    title: `Advertencia`,
+                                    text: data.mensaje,
+                                    type: 'warning',
+                                    showCancelButton: false,
+                                    allowOutsideClick: false,
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#d33',
+                                    confirmButtonText: 'Aceptar',
+                                    cancelButtonText: 'Cancelar'
+                                })
+                            }
+                        },
+                        error: function () {
+                            setTimeout($.unblockUI, 1);
+                            mensajeWarning("Error de conexión.");
+                        },
+                        dataType: "json"
+                    });
+                }
+            })
+        }
+
     function accionNotificar(pk, nombre, accion, titulo = '', args = '', url_ = '{{request.path}}') {
         Swal.fire({
             html: `<b>${titulo}</b><p>${nombre}</p>`,

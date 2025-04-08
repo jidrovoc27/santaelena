@@ -456,6 +456,17 @@ def secuencia_recaudacion(request, puntoventa):
     else:
         return secuencial_.first()
 
+def secuencia_caja(request, anio):
+    from administrativo.models import SecuenciaSesionCaja
+    anioe = datetime.now().date()
+    secuenciacaja = SecuenciaSesionCaja.objects.filter(status=True)
+    if not secuenciacaja.exists():
+        secuencia = SecuenciaSesionCaja(status=True)
+        secuencia.save(request)
+        return secuencia
+    else:
+        return secuenciacaja.first()
+
 def conviert_html_to_pdf(template_src, context_dict):
     import io as StringIO
     from xhtml2pdf import pisa

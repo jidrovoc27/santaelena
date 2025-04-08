@@ -448,8 +448,9 @@ class Persona(ModeloBase):
         return self.usuario.groups.all().distinct()
 
     def lugar_recaudacion(self):
-        if self.lugarrecaudacion_set.filter(origenrecaudacion=1).values("id").exists():
-            return self.lugarrecaudacion_set.filter(origenrecaudacion=1)[0]
+        lugar_rec = self.lugarrecaudacion_set.filter(status=True)
+        if lugar_rec.values("id").exists():
+            return lugar_rec.first()
         return None
 
     def mi_lugar_recaudacion(self):
@@ -1285,13 +1286,9 @@ class SesionCaja(ModeloBase):
             Pago.objects.filter(sesion=self, pagonotacredito__isnull=False, factura__valida=True).distinct().aggregate(
                 valor=Sum('valortotal'))['valor'], 2)
 
-    def total_sesion(self):
-        # SE QUITO LA SUMA DE CUENTAS POR COBRAR + self.total_cuentasxcobrar_sesion()
-        return self.total_efectivo_sesion() + self.total_cheque_sesion() + self.total_deposito_sesion() + self.total_transferencia_sesion() + self.total_tarjeta_sesion() + self.total_recibocaja_sesion() + self.total_electronico_sesion()
-
     def cierre_sesion(self):
-        if self.cierresesioncaja_set.exists():
-            return self.cierresesioncaja_set.all()[0]
+        if self.recaudacionfinalsesioncaja_set.exists():
+            return self.recaudacionfinalsesioncaja_set.all().first()
         return None
 
     def save(self, *args, **kwargs):
@@ -1561,7 +1558,7 @@ class Pago(ModeloBase):
         return None
 
 class SecuenciaSesionCaja(ModeloBase):
-    anioejercicio = models.ForeignKey(AnioEjercicio, on_delete=models.PROTECT, verbose_name=u'Anio Ejercicio')
+    #anioejercicio = models.ForeignKey(AnioEjercicio, on_delete=models.PROTECT, verbose_name=u'Anio Ejercicio')
     secuenciacaja = models.IntegerField(default=0, verbose_name=u'Secuencia Caja')
 
 class FormaDePago(ModeloBase):
@@ -1631,6 +1628,23 @@ class SecuencialRecaudaciones(ModeloBase):
 
     def save(self, *args, **kwargs):
         super(SecuencialRecaudaciones, self).save(*args, **kwargs)
+
+class RecaudacionFinalSesionCaja(ModeloBase):
+    sesion = models.ForeignKey(SesionCaja, on_delete=models.PROTECT, verbose_name=u'Sesion de caja')
+    total = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Total')
+    comprobante = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Total comprobantes')
+    fecha = models.DateField(blank=True, null=True, verbose_name=u'Fecha')
+
+    def __str__(self):
+        return u'Total recaudado: %s' % self.sesion
+
+    class Meta:
+        verbose_name = u"Resumen cierre de sesion de caja"
+        verbose_name_plural = u"Resumenes cierre de sesion de caja"
+        unique_together = ('sesion',)
+
+    def save(self, *args, **kwargs):
+        super(RecaudacionFinalSesionCaja, self).save(*args, **kwargs)
 
 
 class Perms(models.Model):
