@@ -162,7 +162,7 @@ class PacientesForm(FormModeloBase):
                                widget=forms.TextInput(attrs={'class': 'imp-25 form-control', 'col': '6'}))
     telefono_conv = forms.CharField(label=u"Teléfono Fijo", max_length=100, required=False,
                                     widget=forms.TextInput(attrs={'class': 'imp-25 form-control', 'col': '6'}))
-    email = forms.CharField(label=u"Correo Electronico", max_length=1000, required=True,
+    email = forms.CharField(label=u"Correo Electronico", max_length=1000, required=False,
                             widget=forms.TextInput(attrs={'class': 'imp-50 form-control'}))
     sector = forms.CharField(label=u"Sector", max_length=1000, required=False,
                              widget=forms.TextInput(attrs={'class': 'imp-50 form-control'}))

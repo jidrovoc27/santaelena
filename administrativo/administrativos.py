@@ -377,7 +377,7 @@ def view(request):
                     data['search'] = search
                     s = search.split()
                     if len(s) == 1:
-                        filtro = filtro & (Q(persona__cedula__icontains=search) | Q(persona__nombres__icontains=search)| Q(persona__apellido1__icontains=search) | Q(persona__apellido2__icontains=search))
+                        filtro = filtro & (Q(persona__identificacion__icontains=search) | Q(persona__nombres__icontains=search)| Q(persona__apellido1__icontains=search) | Q(persona__apellido2__icontains=search))
                     else:
                         filtro = filtro & (Q(persona__apellido1__icontains=s[0]) & Q(persona__apellido2__icontains=s[1]))
                     url_vars += '&search={}'.format(search)

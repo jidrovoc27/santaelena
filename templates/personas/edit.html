@@ -214,13 +214,13 @@
         });
     </script>
 {% endblock %}
-{% block atras%}/administrativos{% if regreso %}?{% endif %}{% if gruposelect %}&g={{ gruposelect }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if perfil %}&perfil={{ perfil }}{% endif %}{% endblock %}
+{% block atras%}/pacientes{% if regreso %}?{% endif %}{% if gruposelect %}&g={{ gruposelect }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if perfil %}&perfil={{ perfil }}{% endif %}{% endblock %}
 {% block titulo %}{{ title }}{% endblock %}
-{% block formaction %}/administrativos{% endblock %}
-{% block formdestination %}/administrativos?id={{ administrativo.id  }}{% endblock %}
+{% block formaction %}/pacientes{% endblock %}
+{% block formdestination %}/pacientes?id={{ paciente.id  }}{% endblock %}
 {% block formextra %}
     <input type='hidden' name='action' value='edit'/>
-    <input type='hidden' name='id' value="{{ administrativo.id }}"/>
+    <input type='hidden' name='id' value="{{ paciente.id }}"/>
 {% endblock %}
-{% block formback %}/administrativos{% if regreso %}?{% endif %}{% if gruposelect %}&g={{ gruposelect }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if perfil %}&perfil={{ perfil }}{% endif %}{% endblock %}
+{% block formback %}/pacientes{% if regreso %}?{% endif %}{% if gruposelect %}&g={{ gruposelect }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if perfil %}&perfil={{ perfil }}{% endif %}{% endblock %}
 {% block buttonname %}Guardar{% endblock %}

@@ -56,6 +56,8 @@ def view(request):
                 persona_ = int(request.POST['persona'])
                 id_rubros = request.POST.getlist('id_rubros')
                 valores_rubros = request.POST.getlist('valores_rubros')
+                if len(id_rubros) == 0:
+                    return JsonResponse({"result": True, 'mensaje': 'Por favor ingrese al menos un rubro'})
                 qscaja = SesionCaja.objects.filter(status=True, fecha=datetime.now().date(), abierta=True,
                                                    caja__puntoventa__activo=True, caja__activo=True)
                 sesioncj_ = None
