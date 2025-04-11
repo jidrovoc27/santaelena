@@ -122,6 +122,18 @@ def view(request):
             except Exception as e:
                 pass
 
+        elif action == 'imprimircomprobante':
+            try:
+                comprobante = ComprobantePago.objects.get(id=int(request.POST['id']))
+                pagos = comprobante.pagos.filter(status=True).values_list('rubro_id', flat=True)
+                rubros = Rubro.objects.filter(status=True, id__in=pagos)
+                total = rubros.aggregate(valor=Sum('valortotal'))['valor']
+                return conviert_html_to_pdf('comprobantes/reporte/imprimircomprobante.html',
+                                            {'pagesize': 'A4',
+                                             'comprobante': comprobante, 'rubros': rubros, 'total': total})
+            except Exception as ex:
+                pass
+
         return JsonResponse({"result": "bad", "mensaje": u"Solicitud Incorrecta."})
     else:
         if 'action' in request.GET:
