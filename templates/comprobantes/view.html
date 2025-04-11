@@ -2,6 +2,13 @@
 {% load extras %}
 {% block atras %}/{% endblock %}
 {% block extraheading %}
+    <script>
+        function imprimir(id) {
+            openwindow('POST', '{{ request.path }}', {
+                'action': 'imprimircomprobante', 'id': id
+            }, '_blank');
+        }
+    </script>
 {% endblock %}
 {% block content %}
 
@@ -76,20 +83,20 @@
                                    aria-expanded="false">
                                     <i class="fa fa-ellipsis-v" aria-hidden="true"></i></a>
                                 <div class="dropdown-menu" style="">
-{#                                    <a class="dropdown-item"#}
-{#                                       href="{{ request.path }}?action=verstock&id={{ l.id }}">#}
-{#                                        <i class="fa fa-bars dropdown-item-icon" aria-hidden="true"></i>#}
-{#                                        Ver Stock#}
-{#                                    </a>#}
-{#                                    <a class="dropdown-item" href="javascript:void(0);"#}
-{#                                       onclick="formModal('{{ l.id }}','Editar: {{ l.nombre }}', 'edit', true)">#}
-{#                                        <i class="fa fa-pen-to-square dropdown-item-icon" aria-hidden="true"></i>#}
-{#                                        Editar#}
-{#                                    </a>#}
+                                    <a class="dropdown-item" style="cursor: pointer"
+                                       onclick="imprimir('{{ l.id }}')">
+                                        <i class="fa fa-file-pdf dropdown-item-icon" aria-hidden="true"></i>
+                                        Generar comprobante
+                                    </a>
+                                    {#                                    <a class="dropdown-item" href="javascript:void(0);"#}
+                                    {#                                       onclick="formModal('{{ l.id }}','Editar: {{ l.nombre }}', 'edit', true)">#}
+                                    {#                                        <i class="fa fa-pen-to-square dropdown-item-icon" aria-hidden="true"></i>#}
+                                    {#                                        Editar#}
+                                    {#                                    </a>#}
                                 </div>
                             </td>
                         </tr>
-                        {% empty %}
+                    {% empty %}
                         <td colspan="9" style="text-align: center;">NO EXISTEN COMPROBANTES</td>
                     {% endfor %}
 
@@ -99,6 +106,6 @@
         </div>
     </div>
     <div class="row">
-     {% include 'paginacionb4.html' %}
+        {% include 'paginacionb4.html' %}
     </div>
 {% endblock %}
