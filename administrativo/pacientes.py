@@ -2,6 +2,7 @@
 import json
 import sys
 import xlwt
+import openpyxl
 from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -12,7 +13,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
 #from decorators import secure_module, last_access
 from administrativo.commonviews import adduserdata
-from administrativo.forms import PacientesForm, GrupoUsuarioForm, GrupoUsuarioMultipleForm
+from administrativo.forms import PacientesForm, ImportarPacienteForm
 from administrativo.funciones import MiPaginador, calculate_username, puede_realizar_accion, lista_correo, \
     generar_usuario, resetear_clave, generar_nombre
 from administrativo.correo import *
@@ -161,6 +162,56 @@ def view(request):
                 transaction.set_rollback(True)
                 return JsonResponse({"result": "bad", "mensaje": u"Error al guardar los datos."})
 
+        elif action == 'importarpacientes':
+            try:
+                form = ImportarPacienteForm(request.POST, request.FILES)
+                if form.is_valid():
+                    if 'archivo' in request.FILES:
+                        archivo = request.FILES['archivo']
+                        workbook = openpyxl.load_workbook(archivo, data_only=True)
+                        sheet = workbook.worksheets[0]
+                        novedades_registradas = []
+
+                        for row in sheet.iter_rows(min_row=2):
+                            cols = [cell.value for cell in row]
+                            nombres = str(cols[0])
+                            apellido1 = str(cols[1]).strip()
+                            apellido2 = str(cols[2]).strip()
+                            identificacion = str(cols[3]).strip()
+                            sexo = str(cols[4]).strip()
+                            nacionalidad = str(cols[5]).strip()
+                            telefono = str(cols[6]).strip()
+                            correo = str(cols[7]).strip()
+                            direccion = str(cols[8]).strip()
+                            tiposexo = 1
+                            if sexo == 'F':
+                                tiposexo = 2
+                            if Persona.objects.filter(identificacion=identificacion).exists():
+                                return JsonResponse({"result": "bad", "mensaje": u"El numero de identificacion ya está registrado."})
+                            personapaciente = Persona(nombres=nombres,
+                                                      apellido1=apellido1,
+                                                      apellido2=apellido2,
+                                                      identificacion=identificacion,
+                                                      sexo_id=tiposexo,
+                                                      nacionalidad=nacionalidad,
+                                                      direccion=direccion,
+                                                      telefono=telefono,
+                                                      correo=correo)
+                            personapaciente.save(request)
+                            paciente = Paciente(persona=personapaciente,
+                                                fechaingreso=datetime.now().date(),
+                                                activo=True)
+                            paciente.save(request)
+                            personapaciente.crear_perfil(paciente=paciente)
+                    else:
+                        return JsonResponse({'result': True, 'mensaje': u'Por favor suba el archivo'})
+                    return JsonResponse({'result': False})
+                else:
+                    return JsonResponse(
+                        {'result': True, 'mensaje': 'El formulario no ha sido completado correctamente.'})
+            except Exception as ex:
+                pass
+
         return JsonResponse({"result": "bad", "mensaje": u"Solicitud Incorrecta."})
     else:
         data['title'] = u'Listado de pacientes'
@@ -282,6 +333,16 @@ def view(request):
                     return render(request, "personas/delgrupo.html", data)
                 except Exception as ex:
                     pass
+
+            elif action == 'importarpacientes':
+                try:
+                    form = ImportarPacienteForm()
+                    data['form'] = form
+                    data['action'] = 'importarpacientes'
+                    template = get_template("personas/modal/form.html")
+                    return JsonResponse({"result": True, 'data': template.render(data)})
+                except Exception as ex:
+                    return JsonResponse({"result": False, 'mensaje': str(ex)})
 
             return HttpResponseRedirect(request.path)
         else:

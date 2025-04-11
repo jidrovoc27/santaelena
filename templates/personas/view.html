@@ -83,7 +83,7 @@
                         $.unblockUI();
                         $('#itemspanel .panelbody').html(data.data);
                         $('#itemspanel .paneltitle').html(text);
-                        $("#itemspanel").modal({backdrop: 'static', width: '700'}).modal('show');
+                        $("#itemspanel").modal({width: '700'}).modal('show');
                     } else {
 
                         NotificationJG.warning(data.mensaje);
@@ -111,16 +111,11 @@
                 {% csrf_token %}
                 <div class="row-fluid panelbody">
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" id="submit" class="btn btn-success"><i class="fa fa-check-circle"></i> Guardar
-                    </button>
-                    <a href="javascript:;" class="btn btn-danger" data-dismiss="modal"><i
-                            class="fa fa-window-close"></i>
-                        Cancelar</a>
-                </div>
             </form>
         </div>
     </div>
+
+
 
     <div class='row-fluid'>
         <div class='span12'>
@@ -157,11 +152,11 @@
 
     <div class="row-fluid">
         <div class='span12'>
-            {% if perms.sga.puede_modificar_administrativos %}
-                <a href="/pacientes?action=add" class='btn btn-success'><span class="fa fa-plus "></span>
+            <a href="/pacientes?action=add" class='btn btn-success'><span class="fa fa-plus "></span>
                     <t class="hidden-phone hidden-tablet visible-desktop">Adicionar</t>
                 </a>
-            {% endif %}
+                <a href="javascript:void(0)" onclick="formModal('','Importar pacientes','importarpacientes', true)"
+                   class="btn btn-info"><i class="fa fa-file-excel"></i> Importar pacientes</a>
         </div>
     </div>
 
