@@ -56,9 +56,12 @@ def view(request):
                 if not sesioncaja.abierta:
                     return JsonResponse({"result": False, "mensaje": u"La sesión de caja ya esta cerrada."})
                 total_recaudado = sesioncaja.total_recibocaja_sesion()
+                total_egresado = sesioncaja.total_egresado_recibocaja_sesion()
+                total_neto = sesioncaja.total_neto_recibocaja_sesion()
                 rf = RecaudacionFinalSesionCaja(sesion=sesioncaja,
-                                      total=total_recaudado,
+                                      total=total_neto,
                                       comprobante=total_recaudado,
+                                      salidarecaudacion=total_egresado,
                                       fecha=datetime.now())
 
                 rf.save(request)
@@ -111,6 +114,20 @@ def view(request):
                     data['title'] = u'Abrir sesión de cobranzas en caja'
                     lugarrecaudacion = LugarRecaudacion.objects.get(persona=request.session['persona'], origenrecaudacion=1)
                     return render(request, "rec_caja/addsesion.html", data)
+                except Exception as ex:
+                    pass
+
+            if action == 'getMovimientos':
+                try:
+                    data['title'] = u'Detalle de movimientos'
+                    sesioncaja = SesionCaja.objects.get(id=int(request.GET['id']))
+                    data['ingresos'] = pagos = sesioncaja.get_pagos_sesion()
+                    data['totalingresos'] = totalingresos = sesioncaja.total_recibocaja_sesion()
+                    data['egresos'] = egresos = sesioncaja.get_detallesalida_sesion()
+                    data['totalegresos'] = totalegresos = sesioncaja.total_egresado_recibocaja_sesion()
+                    data['totalneto'] = totalneto = sesioncaja.total_neto_recibocaja_sesion()
+                    template = get_template("sesioncaja/modal/detallemovimientos.html")
+                    return JsonResponse({"result": True, 'data': template.render(data)})
                 except Exception as ex:
                     pass
 

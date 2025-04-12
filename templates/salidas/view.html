@@ -1,4 +1,4 @@
-{% extends "comprobantes/basetv.html" %}
+{% extends "salidas/basetv.html" %}
 {% load extras %}
 {% block atras %}/{% endblock %}
 {% block extraheading %}
@@ -21,10 +21,9 @@
     <div class="row">
         <div class="mt-0 pt-0">
             <div class="col-lg-12 pb-2">
-                <a href="javascript:void(0)" onclick="formModal('','Adicionar venta','add', true)"
-                   class="btn btn-success"><i class="fa fa-plus"></i> Adicionar venta</a>
-                <a href="/pacientes" class="btn btn-info"><i class="fa fa-users"></i> Pacientes</a>
-                <a href="/salidas" class="btn btn-warning"><i class="fa fa-money-bill"></i> Salidas</a>
+                <a href="javascript:void(0)"
+                   class="btn btn-success"><i class="fa fa-plus"></i> Adicionar salida</a>
+                <a href="/comprobantes" class="btn btn-info"><i class="fa fa-money-bill"></i> Nueva venta</a>
             </div>
         </div>
     </div>
@@ -35,7 +34,7 @@
                 <input type="hidden">
                 <div class="col-md-12 col-sm-12">
                     <div class="input-group mb-2">
-                        <input type="text" class="form-control" placeholder="Buscar por nombre de paciente."
+                        <input type="text" class="form-control" placeholder="Buscar por nombre de persona."
                                aria-label="Buscar"
                                aria-describedby="button-addon2" name="s" value="{{ s }}">
                         <div class="input-group-append">
@@ -61,24 +60,20 @@
                     <thead class="table-light">
                     <tr>
                         <th style="text-align: center;">N°</th>
-                        <th style="text-align: center;">Persona</th>
+                        <th style="text-align: center;">Registrado por</th>
                         <th style="text-align: center;">Fecha</th>
                         <th style="text-align: center;">Valor</th>
-                        <th style="text-align: center;">Recaudado por</th>
                         <th style="text-align: center; width: 5%"></th>
                     </tr>
 
                     </thead>
                     <tbody>
-                    {% for l in comprobantes %}
+                    {% for l in salidas %}
                         <tr>
                             <td style="text-align: center;">{{ l.numerocompleto }}</td>
-                            <td style="text-align: center;">{{ l.persona }}</td>
+                            <td style="text-align: center;">{{ l.sesioncaja.caja.persona }}</td>
                             <td style="text-align: center;">{{ l.fecha_creacion }}</td>
                             <td style="text-align: center;">${{ l.valor | floatformat:2 }}</td>
-                            <td style="text-align: center;">
-                                {{ l.sesioncaja.caja.persona.usuario }}
-                            </td>
                             <td style="text-align: center; width: 5%;">
                                 <a href="javascript:void(0);" class="btn-icon btn btn-ghost btn-sm rounded-circle"
                                    data-bs-toggle="dropdown" data-offset="-140" aria-haspopup="true"
@@ -88,7 +83,7 @@
                                     <a class="dropdown-item" style="cursor: pointer"
                                        onclick="imprimir('{{ l.id }}')">
                                         <i class="fa fa-file-pdf dropdown-item-icon" aria-hidden="true"></i>
-                                        Generar comprobante
+                                        Generar pdf
                                     </a>
                                     {#                                    <a class="dropdown-item" href="javascript:void(0);"#}
                                     {#                                       onclick="formModal('{{ l.id }}','Editar: {{ l.nombre }}', 'edit', true)">#}
@@ -99,7 +94,7 @@
                             </td>
                         </tr>
                     {% empty %}
-                        <td colspan="9" style="text-align: center;">NO EXISTEN COMPROBANTES</td>
+                        <td colspan="9" style="text-align: center;">NO EXISTEN SALIDAS</td>
                     {% endfor %}
 
                     </tbody>

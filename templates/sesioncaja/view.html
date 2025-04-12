@@ -57,6 +57,9 @@
                         <th style="text-align: center;">Fecha</th>
                         <th style="text-align: center;">Persona</th>
                         <th style="text-align: center;">Total recaudado</th>
+                        <th style="text-align: center;">Total egresado</th>
+                        <th style="text-align: center;">Total neto</th>
+                        <th style="text-align: center;">Detalle</th>
                         <th style="text-align: center;">Estado</th>
                         <th style="text-align: center; width: 5%"></th>
                     </tr>
@@ -70,10 +73,27 @@
                             <td style="text-align: center;">{{ l.caja.persona }}</td>
                             <td style="text-align: center;">
                                 {% if l.abierta %}
-                                    ${{ l.total_recibocaja_sesion | floatformat:2 }}
+                                    $ {{ l.total_recibocaja_sesion | floatformat:2 }}
                                 {% else %}
-                                    ${{ l.cierre_sesion.total | floatformat:2 }}
+                                    $ {{ l.cierre_sesion.comprobante | floatformat:2 }}
                                 {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if l.abierta %}
+                                    $ {{ l.total_egresado_recibocaja_sesion | floatformat:2 }}
+                                {% else %}
+                                    $ {{ l.cierre_sesion.salidarecaudacion | floatformat:2 }}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if l.abierta %}
+                                    $ {{ l.total_neto_recibocaja_sesion | floatformat:2 }}
+                                {% else %}
+                                    $ {{ l.cierre_sesion.total | floatformat:2 }}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <a class="btn btn-info" style="cursor: pointer;" onclick="getDetalle('{{ l.id }}','Sesión de caja {{ l.fecha }} - {{ l.caja.persona }}','getMovimientos', true)"><i class="fa fa-list"></i></a>
                             </td>
                             <td style="text-align: center;">
                                 {% if l.abierta %}

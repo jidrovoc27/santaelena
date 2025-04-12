@@ -1268,8 +1268,20 @@ class SesionCaja(ModeloBase):
                                                    recibocaja__isnull=False).distinct().aggregate(valor=Sum('valortotal'))[
                                    'valor'], 2)
 
+    def get_pagos_sesion(self):
+        return Pago.objects.filter(status=True, sesion=self)
+
+    def get_detallesalida_sesion(self):
+        return DetalleSalidaRecaudacion.objects.filter(status=True, sesion=self)
+
     def total_recibocaja_sesion(self):
         return null_to_decimal(ComprobantePago.objects.filter(sesioncaja=self).distinct().aggregate(valor=Sum('valor'))['valor'], 2)
+
+    def total_egresado_recibocaja_sesion(self):
+        return null_to_decimal(SalidaRecaudacion.objects.filter(sesioncaja=self).distinct().aggregate(valor=Sum('valor'))['valor'], 2)
+
+    def total_neto_recibocaja_sesion(self):
+        return null_to_decimal(self.total_recibocaja_sesion() - self.total_egresado_recibocaja_sesion(), 2)
 
     def total_transferencia_sesion(self):
         return null_to_decimal(Pago.objects.filter(sesion=self, pagotransferenciadeposito__isnull=False,
@@ -1612,10 +1624,41 @@ class ComprobantePago(ModeloBase):
         self.concepto = self.concepto.upper().strip()
         super(ComprobantePago, self).save(*args, **kwargs)
 
+
+class SalidaRecaudacion(ModeloBase):
+    puntoventa = models.ForeignKey(PuntoVenta, on_delete=models.PROTECT, verbose_name=u"Punto Venta", blank=True, null=True)
+    sesioncaja = models.ForeignKey(SesionCaja, on_delete=models.PROTECT, verbose_name=u'Sesión de caja')
+    numero = models.IntegerField(default=0, verbose_name=u"Numero")
+    numerocompleto = models.CharField(default='', max_length=20, verbose_name=u"Numero Completo")
+    concepto = models.TextField(default='', verbose_name=u'Concepto')
+    valor = models.DecimalField(default='0', max_digits=30, decimal_places=2, verbose_name=u'Valor')
+
+    def __str__(self):
+        return u'Salida de dinero $%s' % self.valor
+
+    class Meta:
+        verbose_name = u"Salida recaudación"
+        verbose_name_plural = u"Salidas recaudación"
+        #ordering = ['persona']
+
+    def save(self, *args, **kwargs):
+        self.concepto = self.concepto.upper().strip()
+        super(SalidaRecaudacion, self).save(*args, **kwargs)
+
+
+class DetalleSalidaRecaudacion(ModeloBase):
+    salida = models.ForeignKey(SalidaRecaudacion, on_delete=models.PROTECT, blank=True, null=True, verbose_name=u'Salida recaudación')
+    sesion = models.ForeignKey(SesionCaja, on_delete=models.PROTECT, blank=True, null=True, verbose_name=u'Sesion de caja')
+    fecha = models.DateField(verbose_name=u'Fecha')
+    concepto = models.TextField(default='', verbose_name=u'Concepto')
+    valor = models.DecimalField(default=0, max_digits=30, decimal_places=2, blank=True, null=True, verbose_name=u'Precio unitario')
+
+
 class SecuencialRecaudaciones(ModeloBase):
     puntoventa = models.ForeignKey(PuntoVenta, on_delete=models.PROTECT, verbose_name=u'Punto e venta')
     factura = models.IntegerField(default=0, verbose_name=u'Secuencia Factura')
     comprobante = models.IntegerField(default=0, verbose_name=u'Secuencia Comprobantes')
+    salidarecaudacion = models.IntegerField(default=1, verbose_name=u'Secuencia salida recaudación')
     cajero = models.IntegerField(default=1, verbose_name=u'Secuencia Cajero')
 
     def ultimafactura(self):
@@ -1633,6 +1676,7 @@ class RecaudacionFinalSesionCaja(ModeloBase):
     sesion = models.ForeignKey(SesionCaja, on_delete=models.PROTECT, verbose_name=u'Sesion de caja')
     total = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Total')
     comprobante = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Total comprobantes')
+    salidarecaudacion = models.DecimalField(default=0, max_digits=30, decimal_places=2, verbose_name=u'Total salida de efectivo')
     fecha = models.DateField(blank=True, null=True, verbose_name=u'Fecha')
 
     def __str__(self):

@@ -293,3 +293,7 @@ class SecuencialRecaudacionesForm(FormModeloBase):
 class VentaForm(FormModeloBase):
     persona = forms.CharField(required=False, label=u'Persona', widget=forms.Select(attrs={'class': 'form-control', 'col': '12'}))
     rubro = forms.ModelChoiceField(TipoOtroRubro.objects.filter(status=True), required=False, label=u'Rubro', widget=forms.Select(attrs={'class': 'form-control', 'col': '9'}))
+
+class SalidaRecaudacionForm(FormModeloBase):
+    concepto = forms.CharField(required=False, label=u'Concepto', widget=forms.TextInput(attrs={'class': 'form-control', 'col': '6'}))
+    valor = forms.DecimalField(label=u"Valor", required=False, initial="0.00", widget=forms.TextInput(attrs={'class': 'imp-moneda', 'decimal': '2', 'col': '6'}))

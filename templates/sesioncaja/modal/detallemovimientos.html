@@ -1,0 +1,68 @@
+{% load extras %}
+<table class="w-50" id="items-table">
+    <thead class="table-light">
+    <tr>
+        <th style="text-align: center;">Ingreso</th>
+        <th style="text-align: center;width:40%">Valor</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for ingreso in ingresos %}
+        <tr style="text-align: center;">
+            <td>{{ ingreso.rubro.nombre }}</td>
+            <td>$ {{ ingreso.valortotal }}</td>
+        </tr>
+    {% empty %}
+        <tr style="text-align: center;">
+            <td>---</td>
+            <td>$ ---</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<table class="w-50" id="items-table">
+    <thead class="table-light">
+    <tr>
+        <th style="text-align: center;">Egreso</th>
+        <th style="text-align: center;width:40%">Valor</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for egreso in egresos %}
+        <tr style="text-align: center;">
+            <td>{{ egreso.concepto }}</td>
+            <td>$ {{ egreso.valor }}</td>
+        </tr>
+    {% empty %}
+        <tr style="text-align: center;">
+            <td>---</td>
+            <td>$ ---</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<table class="w-50" id="items-table">
+    <tbody>
+    <tr style="text-align: center;">
+        <td><b>TOTAL</b></td>
+        <td><b>$ {{ totalingresos }}</b></td>
+    </tr>
+    </tbody>
+</table>
+<table class="w-50" id="items-table">
+    <tbody>
+    <tr style="text-align: center;">
+        <td><b>TOTAL</b></td>
+        <td><b>$ {{ totalegresos }}</b></td>
+    </tr>
+    </tbody>
+</table>
+<br>
+<br>
+<h2><b>Total neto: $ {{ totalneto }}</b></h2>
+<div class="row-fluid">
+    <div style="text-align: right; float: left; width: 100%">
+        <br>
+        <a href="javascript:;" class="btn btn-info" data-bs-dismiss="modal"><i class="fa fa-times-circle"></i>Cerrar</a>
+    </div>
+</div>

@@ -26,8 +26,9 @@ from administrativo.funciones import secuencia_recaudacion, MiPaginador, convert
 from administrativo.commonviews import Sum, adduserdata
 from santaelena.settings import SITE_ROOT, MEDIA_ROOT, SITE_STORAGE, \
     MEDIA_URL
-from administrativo.models import ComprobantePago, LugarRecaudacion, Rubro, Pago, SesionCaja, TipoOtroRubro
-from administrativo.forms import VentaForm
+from administrativo.models import ComprobantePago, LugarRecaudacion, Rubro, Pago, SesionCaja, TipoOtroRubro, SalidaRecaudacion, \
+    DetalleSalidaRecaudacion
+from administrativo.forms import VentaForm, SalidaRecaudacionForm
 from django.forms.models import model_to_dict
 from decimal import Decimal
 import sys
@@ -51,13 +52,11 @@ def view(request):
 
         if action == 'add':
             try:
-                from administrativo.models import TipoOtroRubro
-                form = VentaForm(request.POST)
-                persona_ = int(request.POST['persona'])
-                id_rubros = request.POST.getlist('id_rubros')
-                valores_rubros = request.POST.getlist('valores_rubros')
-                if len(id_rubros) == 0:
-                    return JsonResponse({"result": True, 'mensaje': 'Por favor ingrese al menos un rubro'})
+                form = SalidaRecaudacionForm(request.POST)
+                id_conceptos = request.POST.getlist('id_conceptos')
+                valores_conceptos = request.POST.getlist('valores_conceptos')
+                if len(id_conceptos) == 0:
+                    return JsonResponse({"result": True, 'mensaje': 'Por favor ingrese al menos un concepto con su valor'})
                 qscaja = SesionCaja.objects.filter(status=True, fecha=datetime.now().date(), abierta=True,
                                                    caja__puntoventa__activo=True, caja__activo=True)
                 sesioncj_ = None
@@ -69,46 +68,32 @@ def view(request):
                 sesion_caja = caja.sesion_caja()
                 secuencia = secuencia_recaudacion(request, sesion_caja.caja.puntoventa)
                 puntoventa = secuencia.puntoventa
-                while ComprobantePago.objects.filter(puntoventa=puntoventa, numero=secuencia.comprobante).exists():
-                    secuencia.comprobante += 1
+                while SalidaRecaudacion.objects.filter(puntoventa=puntoventa, numero=secuencia.salidarecaudacion).exists():
+                    secuencia.salidarecaudacion += 1
                     secuencia.save()
-                if ComprobantePago.objects.filter(puntoventa=puntoventa, numero=secuencia.comprobante).exists():
+                if SalidaRecaudacion.objects.filter(puntoventa=puntoventa, numero=secuencia.salidarecaudacion).exists():
                     transaction.set_rollback(True)
-                    return False, u"Numero de comprobante existente"
-                numerocompleto = caja.puntoventa.establecimiento.strip() + "-" + caja.puntoventa.puntoventa.strip() + "-" + str(secuencia.comprobante).zfill(9)
-                newcomprobante = ComprobantePago(puntoventa=puntoventa,
-                                                 persona_id=persona_,
-                                                 numero=secuencia.comprobante,
+                    return False, u"Numero de salida de recaudación existente"
+                numerocompleto = caja.puntoventa.establecimiento.strip() + "-" + caja.puntoventa.puntoventa.strip() + "-" + str(secuencia.salidarecaudacion).zfill(9)
+                newsalida = SalidaRecaudacion(puntoventa=puntoventa,
+                                                 numero=secuencia.salidarecaudacion,
                                                  numerocompleto=numerocompleto,
                                                  sesioncaja=sesion_caja)
-                newcomprobante.save(request)
+                newsalida.save(request)
                 contador = 0
                 totalpagado = 0
-                for idrubro in id_rubros:
-                    tiprubro = TipoOtroRubro.objects.get(id=int(idrubro))
-                    valor_rubro = valores_rubros[contador]
-                    newrubro = Rubro(tipo=tiprubro,
-                                     persona_id=persona_,
-                                     nombre=tiprubro.nombre,
-                                     fecha=datetime.now().date(),
-                                     fechavence=datetime.now().date(),
-                                     iva_id=1,
-                                     valor=float(),
-                                     valortotal=float(valor_rubro),
-                                     cancelado=True)
-                    newrubro.save(request)
-                    newpago = Pago(sesion=sesion_caja,
-                                   rubro=newrubro,
+                for id_concepto in id_conceptos:
+                    valor_concepto = valores_conceptos[contador]
+                    newdetalle = DetalleSalidaRecaudacion(sesion=sesion_caja,
+                                   salida=newsalida,
                                    fecha=datetime.now().date(),
-                                   preciounitario=float(valor_rubro),
-                                   subtotal0=float(valor_rubro),
-                                   valortotal=float(valor_rubro))
-                    newpago.save(request)
-                    totalpagado = float(totalpagado) + float(valores_rubros[0])
-                    newcomprobante.pagos.add(newpago)
+                                   concepto=id_concepto,
+                                   valor=float(valor_concepto))
+                    newdetalle.save(request)
+                    totalpagado = float(totalpagado) + float(valor_concepto)
                     contador += 1
-                newcomprobante.valor = totalpagado
-                newcomprobante.save(request)
+                newsalida.valor = totalpagado
+                newsalida.save(request)
                 return JsonResponse({"result": False})
             except Exception as ex:
                 transaction.set_rollback(True)
@@ -145,10 +130,10 @@ def view(request):
 
             if action == 'add':
                 try:
-                    form = VentaForm()
+                    form = SalidaRecaudacionForm()
                     data['form'] = form
                     data['id'] = request.GET['id']
-                    template = get_template("comprobantes/modal/form_venta.html")
+                    template = get_template("salidas/modal/form_salida.html")
                     return JsonResponse({"result": True, 'data': template.render(data)})
                 except Exception as ex:
                     return JsonResponse({"result": False, 'mensaje': str(ex)})
@@ -164,7 +149,7 @@ def view(request):
 
         else:
             try:
-                data['title'] = u'Comprobantes de pago'
+                data['title'] = u'Salida de efectivo'
                 ids, search, a, filtro, url_vars = None, None, None, Q(status=True), f'&action='
                 request.session['viewactivo'] = 1
                 if 's' in request.GET:
@@ -190,9 +175,9 @@ def view(request):
                     ids = request.GET['id']
                     filtro = filtro & Q(id=ids)
 
-                data['comprobantes'] = comprobantes = ComprobantePago.objects.filter(filtro).distinct().order_by(
+                data['salidas'] = salidas = SalidaRecaudacion.objects.filter(filtro).distinct().order_by(
                     '-fecha_creacion', '-id')
-                paging = MiPaginador(comprobantes, 25)
+                paging = MiPaginador(salidas, 25)
                 p = 1
                 try:
                     paginasesion = 1
@@ -221,9 +206,9 @@ def view(request):
                 data['search'] = search if search else ""
                 data['s'] = search if search else ""
                 data['url_vars'] = url_vars
-                data['tota_recaudado'] = Pago.objects.filter(status=True).aggregate(total=Coalesce(Sum('valortotal'), 0, output_field=FloatField())).get('total')
-                data['tota_ventas'] = ComprobantePago.objects.filter(status=True).count()
-                return render(request, "comprobantes/view.html", data)
+                data['tota_salida_efectivo'] = SalidaRecaudacion.objects.filter(status=True).aggregate(total=Coalesce(Sum('valor'), 0, output_field=FloatField())).get('total')
+                data['tota_salidas'] = SalidaRecaudacion.objects.filter(status=True).count()
+                return render(request, "salidas/view.html", data)
             except Exception as ex:
                 pass
 
