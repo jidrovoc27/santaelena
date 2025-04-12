@@ -147,6 +147,17 @@ def view(request):
                 except Exception as ex:
                     return JsonResponse({"result": False, 'mensaje': str(ex)})
 
+            if action == 'getMovimientos':
+                try:
+                    data['title'] = u'Detalle de movimientos'
+                    salida = SalidaRecaudacion.objects.get(id=int(request.GET['id']))
+                    data['egresos'] = egresos = salida.detallesalidarecaudacion_set.filter(status=True)
+                    data['totalegresos'] = totalegresos = null_to_decimal(egresos.aggregate(valor=Sum('valor'))['valor'], 2)
+                    template = get_template("salidas/modal/movimientos.html")
+                    return JsonResponse({"result": True, 'data': template.render(data)})
+                except Exception as ex:
+                    pass
+
         else:
             try:
                 data['title'] = u'Salida de efectivo'

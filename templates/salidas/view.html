@@ -63,6 +63,7 @@
                         <th style="text-align: center;">Registrado por</th>
                         <th style="text-align: center;">Fecha</th>
                         <th style="text-align: center;">Valor</th>
+                        <th style="text-align: center;">Detalle</th>
                         <th style="text-align: center; width: 5%"></th>
                     </tr>
 
@@ -74,6 +75,11 @@
                             <td style="text-align: center;">{{ l.sesioncaja.caja.persona }}</td>
                             <td style="text-align: center;">{{ l.fecha_creacion }}</td>
                             <td style="text-align: center;">${{ l.valor | floatformat:2 }}</td>
+                            <td style="text-align: center;">
+                                <a class="btn btn-info" style="cursor: pointer;"
+                                   onclick="getDetalle('{{ l.id }}','Salida de efectivo {{ l.sesioncaja.caja.persona }} - {{ l.numerocompleto }}','getMovimientos', true)"><i
+                                        class="fa fa-list"></i></a>
+                            </td>
                             <td style="text-align: center; width: 5%;">
                                 <a href="javascript:void(0);" class="btn-icon btn btn-ghost btn-sm rounded-circle"
                                    data-bs-toggle="dropdown" data-offset="-140" aria-haspopup="true"
