@@ -24,15 +24,18 @@
     </div>
 
 {% endfor %}
-<a id="add-item-btn" class="btn btn-success btn-mini" style="width: 5%;height: 5%;cursor: pointer"><i class="fe fe-plus"></i></a>
+<a id="add-item-btn" class="btn btn-success btn-mini" style="width: 5%;height: 5%;cursor: pointer"><i
+        class="fe fe-plus"></i></a>
 <br>
 <br>
 <table id="items-table">
     <thead class="table-light">
     <tr>
-        <th style="text-align: center;">Rubro</th>
-        <th style="text-align: center;width:40%">Valor</th>
-        <th style="text-align: center;width:20%">Acción</th>
+        <th style="text-align: center;width:25%">Rubro</th>
+        <th style="text-align: center;width:25%">Valor</th>
+        <th style="text-align: center;width:25%">Descuento</th>
+        <th style="text-align: center;width:25%">Total</th>
+        <th style="text-align: center;width:25%">Acción</th>
     </tr>
     </thead>
     <tbody>
@@ -53,101 +56,112 @@
     $(function () {
         $("select").select2({width: '80%'});
         $('#id_persona').select2({
-                    language: {
-                        inputTooShort: function () {
-                            return "Ingresa al menos un caracter...";
-                        },
-                        "noResults": function () {
-                            return "Sin resultados";
-                        },
-                        "searching": function () {
-                            return "Buscando...";
-                        }
-                    },
-                    allowClear: true,
-                    ajax: {
-                        delay: 250,
-                        type: 'POST',
-                        url: '{{ request.path }}',
-                        data: function (params) {
-                            return {
-                                term: params.term,
-                                'action': 'buscar_persona'
-                            };
-                        },
-                        processResults: function (data) {
-                            return {
-                                results: data
-                            };
-                        },
-                    },
-                    placeholder: 'Busca una persona',
-                    minimumInputLength: 1,
-                });
+            language: {
+                inputTooShort: function () {
+                    return "Ingresa al menos un caracter...";
+                },
+                "noResults": function () {
+                    return "Sin resultados";
+                },
+                "searching": function () {
+                    return "Buscando...";
+                }
+            },
+            allowClear: true,
+            ajax: {
+                delay: 250,
+                type: 'POST',
+                url: '{{ request.path }}',
+                data: function (params) {
+                    return {
+                        term: params.term,
+                        'action': 'buscar_persona'
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data
+                    };
+                },
+            },
+            placeholder: 'Busca una persona',
+            minimumInputLength: 1,
+        });
     });
     $(document).ready(function () {
         $('#add-item-btn').click(function () {
-    // Obtener el select de rubro
-    var rubroSelect = $('#id_rubro');
-    var selectedValue = rubroSelect.val();
+            // Obtener el select de rubro
+            var rubroSelect = $('#id_rubro');
+            var selectedValue = rubroSelect.val();
 
-    // Verificar si se ha seleccionado un rubro
-    if (selectedValue) {
-        // Verificar si el rubro ya existe en la tabla
-        var existeEnTabla = false;
-        $('#items-table tbody tr').each(function() {
-            var idExistente = $(this).find('input[type="hidden"]').val();
-            if (idExistente === selectedValue) {
-                existeEnTabla = true;
-                return false; // Salir del each
-            }
-        });
+            // Verificar si se ha seleccionado un rubro
+            if (selectedValue) {
+                // Verificar si el rubro ya existe en la tabla
+                var existeEnTabla = false;
+                $('#items-table tbody tr').each(function () {
+                    var idExistente = $(this).find('input[type="hidden"]').val();
+                    if (idExistente === selectedValue) {
+                        existeEnTabla = true;
+                        return false; // Salir del each
+                    }
+                });
 
-        if (existeEnTabla) {
-            alert('Este rubro ya ha sido agregado a la tabla');
-            return; // Detener la ejecución
-        }
-
-        // Obtener el texto seleccionado
-        var selectedText = rubroSelect.find('option:selected').text();
-
-        $.ajax({
-            type: "GET",
-            url: "{{ request.path }}",
-            data: {'id': selectedValue, 'action': 'getValor'},
-            success: function (data) {
-                $.unblockUI();
-                if (data.result === true) {
-                    // Crear nueva fila para la tabla
-                    var newRow = '<tr>' +
-                        '<td style="text-align: center;display:none"><input style="text-align: center" name="id_rubros" type="hidden" value="' + selectedValue + '"></td>' +
-                        '<td style="text-align: center;">' + selectedText + '</td>' +
-                        '<td style="text-align: center;"><input style="text-align: center;width: 20%" name="valores_rubros" type="number" value="' + data.valor + '"></td>' +
-                        '<td style="text-align: center;"><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fe fe-trash"></i></button></td>' +
-                        '</tr>';
-
-                    // Añadir la fila a la tabla
-                    $('#items-table tbody').append(newRow);
-
-                    // Opcional: limpiar el select después de añadir
-                    rubroSelect.val('');
-                } else {
-                    alert('Error al consultar');
+                if (existeEnTabla) {
+                    alert('Este rubro ya ha sido agregado a la tabla');
+                    return; // Detener la ejecución
                 }
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                $.unblockUI();
-                console.error('Error:', textStatus, errorThrown);
+
+                // Obtener el texto seleccionado
+                var selectedText = rubroSelect.find('option:selected').text();
+
+                $.ajax({
+                    type: "GET",
+                    url: "{{ request.path }}",
+                    data: {'id': selectedValue, 'action': 'getValor'},
+                    success: function (data) {
+                        $.unblockUI();
+                        if (data.result === true) {
+                            // Crear nueva fila para la tabla
+                            var newRow = '<tr>' +
+                                '<td style="text-align: center;display:none"><input style="text-align: center" name="id_rubros" type="hidden" value="' + selectedValue + '"></td>' +
+                                '<td style="text-align: center;">' + selectedText + '</td>' +
+                                '<td style="text-align: center;"><input style="text-align: center;width: 50%" class="input-rubro" name="valores_rubros" type="number" value="' + data.valor + '"></td>' +
+                                '<td style="text-align: center;"><input style="text-align: center;width: 50%" class="input-descuento" name="valores_descuentos" type="number" value="0"></td>' +
+                                '<td style="text-align: center;"><input style="text-align: center;width: 50%" class="input-total" name="valores_totales" type="number" readonly value="' + data.valor + '"></td>' +
+                                '<td style="text-align: center;"><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fe fe-trash"></i></button></td>' +
+                                '</tr>';
+
+                            $('#items-table tbody').append(newRow);
+
+                            // --- Nuevo código: Actualizar total automáticamente ---
+                            $(document).on('input', '.input-rubro, .input-descuento', function () {
+                                var row = $(this).closest('tr');
+                                var rubro = parseFloat(row.find('.input-rubro').val()) || 0;
+                                var descuento = parseFloat(row.find('.input-descuento').val()) || 0;
+                                var total = rubro - descuento;
+
+                                row.find('.input-total').val(total.toFixed(2)); // Formato con 2 decimales
+                            });
+                            // --- Fin del nuevo código ---
+
+                            rubroSelect.val('');
+                        } else {
+                            alert('Error al consultar');
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        $.unblockUI();
+                        console.error('Error:', textStatus, errorThrown);
+                    }
+                });
+            } else {
+                alert('Por favor seleccione un rubro primero');
             }
         });
-    } else {
-        alert('Por favor seleccione un rubro primero');
-    }
-});
 
 // Evento para eliminar filas
-$(document).on('click', '.remove-row', function() {
-    $(this).closest('tr').remove();
-});
+        $(document).on('click', '.remove-row', function () {
+            $(this).closest('tr').remove();
+        });
     });
 </script>

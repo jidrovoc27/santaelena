@@ -58,6 +58,7 @@ def view(request):
                 persona_ = int(request.POST['persona'])
                 id_rubros = request.POST.getlist('id_rubros')
                 valores_rubros = request.POST.getlist('valores_rubros')
+                valores_descuentos = request.POST.getlist('valores_descuentos')
                 if len(id_rubros) == 0:
                     return JsonResponse({"result": True, 'mensaje': 'Por favor ingrese al menos un rubro'})
                 qscaja = SesionCaja.objects.filter(status=True, fecha=datetime.now().date(), abierta=True,
@@ -88,15 +89,18 @@ def view(request):
                 totalpagado = 0
                 for idrubro in id_rubros:
                     tiprubro = TipoOtroRubro.objects.get(id=int(idrubro))
-                    valor_rubro = valores_rubros[contador]
+                    valor_rubro = float(valores_rubros[contador])
+                    valor_descuento = float(valores_descuentos[contador])
+                    valorTotalPagado = valor_rubro - valor_descuento
                     newrubro = Rubro(tipo=tiprubro,
                                      persona_id=persona_,
                                      nombre=tiprubro.nombre,
                                      fecha=datetime.now().date(),
                                      fechavence=datetime.now().date(),
                                      iva_id=1,
-                                     valor=float(),
-                                     valortotal=float(valor_rubro),
+                                     valor=float(valor_rubro),
+                                     valordescuento=float(valor_descuento),
+                                     valortotal=float(valorTotalPagado),
                                      cancelado=True)
                     newrubro.save(request)
                     newpago = Pago(sesion=sesion_caja,
@@ -104,9 +108,10 @@ def view(request):
                                    fecha=datetime.now().date(),
                                    preciounitario=float(valor_rubro),
                                    subtotal0=float(valor_rubro),
-                                   valortotal=float(valor_rubro))
+                                   valordescuento=float(valor_descuento),
+                                   valortotal=float(valorTotalPagado))
                     newpago.save(request)
-                    totalpagado = float(totalpagado) + float(valores_rubros[0])
+                    totalpagado = float(totalpagado) + float(valorTotalPagado)
                     newcomprobante.pagos.add(newpago)
                     contador += 1
                 newcomprobante.valor = totalpagado
@@ -146,15 +151,15 @@ def view(request):
                     f"CLIENTE: {comprobante.persona}",
                     f"C.I.: {comprobante.persona.identificacion}",
                     "-" * 32,
-                    "DESCRIPCION          TOTAL",
+                    "DESCRIPCION  VAL   DESC   TOTAL",
                 ]
 
                 for rubro in rubros:
-                    ticket_content.append(f"{rubro.nombre.ljust(20)} ${rubro.valortotal:.2f}")
+                    ticket_content.append(f"{rubro.nombre.ljust(10)} ${str(rubro.valor).ljust(5)} ${str(rubro.valordescuento).ljust(1)}  ${rubro.valortotal:.2f}")
 
                 ticket_content.extend([
                     "-" * 32,
-                    f"TOTAL: ${total:.2f}".rjust(27),
+                    f"TOTAL: ${total:.2f}".rjust(31),
                     "-" * 32,
                     "  Gracias por su preferencia  ",
                 ])
@@ -288,14 +293,26 @@ def view(request):
                 printer.text("-" * 32 + "\n")
 
                 # Lista de rubros
-                printer.text("DESCRIPCION          TOTAL\n")
-                for rubro in rubros:
-                    printer.text(f"{rubro.nombre.ljust(20)} ${rubro.valortotal:.2f}\n")
+                printer.text("DESCRIPCION          VAL      DESC     TOTAL\n")
+                printer.text("-" * 42 + "\n")  # Línea separadora
 
-                # Total y cierre
-                printer.text("-" * 32 + "\n")
-                printer.set(align='right')
-                printer.text(f"TOTAL: ${total:.2f}\n")
+                for rubro in rubros:
+                    total = rubro.valortotal  # Asumo que valortotal ya es (valor - descuento)
+                    valor_original = rubro.valor  # Campo con el valor sin descuento
+                    descuento = rubro.valordescuento  # Campo con el monto descontado
+
+                    # Formatea la línea con 4 columnas alineadas
+                    linea = (
+                        f"{rubro.nombre.ljust(18)} "  # DESCRIPCIÓN (18 caracteres)
+                        f"${valor_original:.2f}   "  # VAL (alineado)
+                        f"${descuento:.2f}   "  # DESC (alineado)
+                        f"${total:.2f}\n"  # TOTAL
+                    )
+                    printer.text(linea)
+
+                # Línea final con el total general (opcional)
+                printer.text("-" * 42 + "\n")
+                printer.text(f"TOTAL GENERAL: ${sum(r.valortotal for r in rubros):.2f}\n".rjust(42))
                 printer.set(align='center')
                 printer.text("-" * 32 + "\n")
                 printer.text("Gracias por su preferencia\n")

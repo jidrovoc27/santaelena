@@ -1008,7 +1008,7 @@ class Rubro(ModeloBase):
         return self.pago_set.all().order_by('-fecha')[0].factura().id
 
     def valor_total(self):
-        return (float(self.valor))
+        return (float(self.valor) - float(self.valordescuento))
 
     def valor_iva(self):
         if self.iva.porcientoiva:
