@@ -124,6 +124,89 @@ def view(request):
                 transaction.set_rollback(True)
                 return JsonResponse({"error": True, "mensaje": "Ha ocurrido un error al eliminar el producto."})
 
+        if action == 'imprimirkardexfechas':
+            try:
+                fecha_inicio = request.POST.get('fechainicio')
+                fecha_fin = request.POST.get('fechafin')
+                if fecha_inicio:
+                    fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+                    # Ajuste para incluir desde el inicio del día (00:00:00)
+                    fecha_inicio_query = fecha_inicio_dt
+                else:
+                    fecha_inicio_query = None
+
+                if fecha_fin:
+                    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d')
+                    # Ajuste para incluir hasta el final del día (23:59:59.999999)
+                    fecha_fin_query = fecha_fin_dt + timedelta(days=1) - timedelta(microseconds=1)
+                else:
+                    fecha_fin_query = None
+
+                filters = Q(status=True)
+                if fecha_inicio_query:
+                    filters &= Q(fecha_creacion__gte=fecha_inicio_query)
+                if fecha_fin_query:
+                    filters &= Q(fecha_creacion__lte=fecha_fin_query)
+
+                stocks = Stock.objects.filter(filters).order_by('-producto_id')
+
+                response = HttpResponse(content_type='application/ms-excel')
+                response['Content-Disposition'] = 'attachment; filename="kardexproducto.xls"'
+                font_style = xlwt.XFStyle()
+                font_style.font.bold = True
+                fuentecabecera = easyxf(
+                    'font: name Calibri, color-index black, bold on; pattern: pattern solid, fore_colour gray25; alignment: horiz centre; borders: left thin, right thin, top thin, bottom thin')
+                style2 = easyxf('borders: left thin, right thin, top thin, bottom thin; alignment: horiz centre')
+
+                # Estilos con un azul más oscuro y opaco
+                style_header_1 = easyxf(
+                    'font: name Calibri, bold on, height 240, color-index white; alignment: horiz centre, vert centre; pattern: pattern solid, fore_colour 23; borders: left thin, right thin, top thin')
+                style_header_2 = easyxf(
+                    'font: name Calibri, height 200, color-index white; alignment: horiz centre, vert centre; pattern: pattern solid, fore_colour 23; borders: left thin, right thin, bottom thin')
+
+                wb = xlwt.Workbook(encoding='utf-8')
+                ws = wb.add_sheet('hoja1')
+
+                row_num = 5
+                columns = [
+                    ('ID', 2000),
+                    ('Usuario', 2000),
+                    ('Producto stock', 12000),
+                    ('Fecha', 12000),
+                    ('Movimiento', 8000),
+                    ('Cantidad', 4000),
+                    ('Costo', 4000),
+                    ('Total', 4000),
+                    ('Observación', 8000),
+                ]
+
+                # Escribir el título en las filas combinadas
+                ws.write_merge(0, 1, 0, 8, 'CLÍNICA SANTA ELENA', style_header_1)
+                ws.write_merge(2, 3, 0, 8, 'FLUJO DE MOVIMIENTOS DEL PRODUCTO EN STOCK', style_header_2)
+
+                for col_num in range(len(columns)):
+                    ws.write(row_num, col_num, columns[col_num][0], fuentecabecera)
+                    ws.col(col_num).width = columns[col_num][1]
+
+                row_num += 1
+                for stock in stocks:
+                    listado = KardexProducto.objects.filter(status=True, stock=stock).order_by('-id')
+                    for lis in listado.order_by('-fecha_creacion'):
+                        ws.write(row_num, 0, str(lis.id), style2)
+                        ws.write(row_num, 1, str(lis.usuario_creacion), style2)
+                        ws.write(row_num, 2, str(lis.stock), style2)
+                        ws.write(row_num, 3, str(lis.fecha_creacion), style2)
+                        ws.write(row_num, 4, lis.get_movimiento_display(), style2)
+                        ws.write(row_num, 5, lis.cantidad, style2)
+                        ws.write(row_num, 6, f"{lis.costo:.2f}", style2)
+                        ws.write(row_num, 7, f"{lis.total:.2f}", style2)
+                        ws.write(row_num, 8, str(lis.observacion or ' '), style2)
+                        row_num += 1
+                wb.save(response)
+                return response
+            except Exception as ex:
+                return JsonResponse({'result': False, 'error': str(ex)})
+
         # ESPECIFICACIONES DEL PRODUCTO --------------------------------------------------------------------------------
         if action == 'verespecificaciones':
             try:
