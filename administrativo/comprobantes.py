@@ -173,8 +173,9 @@ def view(request):
         elif action == 'generardatospaciente':
             try:
                 # Datos de ejemplo (reemplázalos con los reales)
+                comprobante = ComprobantePago.objects.get(id=int(request.POST['id']))
                 datos = {
-                    "nombre": "___________________",
+                    "nombre": comprobante.persona,
                     "pa": "________________",
                     "p": "________________",
                     "spo": "________________",
