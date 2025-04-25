@@ -4,8 +4,73 @@
 {% block extraheading %}
     <script>
         function imprimir(id) {
+            $.ajax({
+                    type: "POST",
+                    url: "{{ request.path }}",
+                    data: {'action': 'imprimirticket', 'id': id},
+                    success: function (data) {
+                        $.unblockUI();
+                        if (data.result === true) {
+                            Swal.fire({
+                                type: "success",
+                                icon: "success",
+                                title: "Enviado satisfactoriamente!",
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        } else {
+                            Swal.fire({
+                                type: "error",
+                                icon: "error",
+                                title: data.mensaje,
+                                showConfirmButton: false,
+                                timer: 2500
+                            });
+                        }
+                    }
+                });
+        }
+        function imprimirsignosvitales(id) {
+            $.ajax({
+                    type: "POST",
+                    url: "{{ request.path }}",
+                    data: {'action': 'imprimirdatopaciente', 'id': id},
+                    success: function (data) {
+                        $.unblockUI();
+                        if (data.result === true) {
+                            Swal.fire({
+                                type: "success",
+                                icon: "success",
+                                title: "Enviado satisfactoriamente!",
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        } else {
+                            Swal.fire({
+                                type: "error",
+                                icon: "error",
+                                title: data.mensaje,
+                                showConfirmButton: false,
+                                timer: 2500
+                            });
+                        }
+                    }
+                });
+        }
+        function generarsignosvitales(id) {
+            openwindow('POST', '{{ request.path }}', {
+                'action': 'generardatospaciente', 'id': id
+            }, '_blank');
+        }
+        function generarPdf(id) {
             openwindow('POST', '{{ request.path }}', {
                 'action': 'imprimircomprobante', 'id': id
+            }, '_blank');
+        }
+
+        function generarTicket(id) {
+            openwindow('POST', '{{ request.path }}', {
+                'action': 'generarticket', 'id': id
             }, '_blank');
         }
     </script>
@@ -25,6 +90,7 @@
                    class="btn btn-success"><i class="fa fa-plus"></i> Adicionar venta</a>
                 <a href="/pacientes" class="btn btn-info"><i class="fa fa-users"></i> Pacientes</a>
                 <a href="/salidas" class="btn btn-warning"><i class="fa fa-money-bill"></i> Salidas</a>
+                <a style="cursor: pointer" onclick="imprimirsignosvitales('{{ l.id }}')" class="btn btn-primary"><i class="fa fa-heart"></i> Imprimir signos vitales</a>
             </div>
         </div>
     </div>
@@ -65,6 +131,7 @@
                         <th style="text-align: center;">Fecha</th>
                         <th style="text-align: center;">Valor</th>
                         <th style="text-align: center;">Recaudado por</th>
+                        <th style="text-align: center;">Imprimir</th>
                         <th style="text-align: center; width: 5%"></th>
                     </tr>
 
@@ -79,6 +146,9 @@
                             <td style="text-align: center;">
                                 {{ l.sesioncaja.caja.persona.usuario }}
                             </td>
+                            <td style="text-align: center;">
+                                <a style="cursor: pointer;" class="btn btn-info btn-mini" title="Imprimir ticket" onclick="imprimir('{{ l.id }}')" target="_blank"><i class="fa fa-print"></i></a>
+                            </td>
                             <td style="text-align: center; width: 5%;">
                                 <a href="javascript:void(0);" class="btn-icon btn btn-ghost btn-sm rounded-circle"
                                    data-bs-toggle="dropdown" data-offset="-140" aria-haspopup="true"
@@ -86,9 +156,20 @@
                                     <i class="fa fa-ellipsis-v" aria-hidden="true"></i></a>
                                 <div class="dropdown-menu" style="">
                                     <a class="dropdown-item" style="cursor: pointer"
-                                       onclick="imprimir('{{ l.id }}')">
+                                       onclick="generarTicket('{{ l.id }}')">
+                                        <i class="fa fa-file-text dropdown-item-icon" aria-hidden="true"></i>
+                                        Generar ticket
+                                    </a>
+                                    <a class="dropdown-item" style="cursor: pointer"
+                                       onclick="generarPdf('{{ l.id }}')">
                                         <i class="fa fa-file-pdf dropdown-item-icon" aria-hidden="true"></i>
                                         Generar comprobante
+                                    </a>
+
+                                    <a class="dropdown-item" style="cursor: pointer"
+                                       onclick="generarsignosvitales('{{ l.id }}')">
+                                        <i class="fa fa-file-text dropdown-item-icon" aria-hidden="true"></i>
+                                        Generar signos vitales
                                     </a>
                                     {#                                    <a class="dropdown-item" href="javascript:void(0);"#}
                                     {#                                       onclick="formModal('{{ l.id }}','Editar: {{ l.nombre }}', 'edit', true)">#}

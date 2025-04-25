@@ -1,11 +1,12 @@
 # -*- coding: UTF-8 -*-
+import serial
 import base64
 import io
 import os
 import json
 import random
 from datetime import datetime
-
+from escpos.printer import Serial
 import pyqrcode
 import xlsxwriter
 import xlwt
@@ -42,6 +43,7 @@ def view(request):
     adduserdata(request, data)
     data['persona'] = persona = data['persona']
     data['sesion_caja'] = None
+    puerto = '/dev/ttyUSB0'
     if persona.puede_recibir_pagos():
         caja = persona.caja()
         sesion_caja = caja.sesion_caja()
@@ -125,6 +127,186 @@ def view(request):
                 return HttpResponse(json.dumps(data), content_type='application/json')
             except Exception as e:
                 pass
+
+        elif action == 'generarticket':
+            try:
+                comprobante = ComprobantePago.objects.get(id=int(request.POST['id']))
+                pagos = comprobante.pagos.filter(status=True).values_list('rubro_id', flat=True)
+                rubros = Rubro.objects.filter(status=True, id__in=pagos)
+                total = rubros.aggregate(valor=Sum('valortotal'))['valor']
+                # Generar texto plano alineado manualmente
+                ticket_content = [
+                    "      CLINICA SANTA ELENA      ",
+                    "      RUC: 0993285838001       ",
+                    "Av. Colon y Pedro Brito J Montero",
+                    "Tel: 0985893859 / 974593       ",
+                    "-" * 32,
+                    f"COMPROBANTE No: {comprobante.numerocompleto}",
+                    f"FECHA: {comprobante.fecha_creacion.strftime('%Y-%m-%d %H:%M')}",
+                    f"CLIENTE: {comprobante.persona}",
+                    f"C.I.: {comprobante.persona.identificacion}",
+                    "-" * 32,
+                    "DESCRIPCION          TOTAL",
+                ]
+
+                for rubro in rubros:
+                    ticket_content.append(f"{rubro.nombre.ljust(20)} ${rubro.valortotal:.2f}")
+
+                ticket_content.extend([
+                    "-" * 32,
+                    f"TOTAL: ${total:.2f}".rjust(27),
+                    "-" * 32,
+                    "  Gracias por su preferencia  ",
+                ])
+
+                response = HttpResponse("\n".join(ticket_content), content_type="text/plain")
+                response['Content-Disposition'] = 'inline; filename="ticket.txt"'
+                return response
+            except Exception as ex:
+                pass
+
+        elif action == 'generardatospaciente':
+            try:
+                # Datos de ejemplo (reemplázalos con los reales)
+                datos = {
+                    "nombre": "___________________",
+                    "pa": "________________",
+                    "p": "________________",
+                    "spo": "________________",
+                    "gli": "________________",
+                    "t": "________________",
+                    "peso": "________________",
+                    "talla": "________________",
+                    "fr": "________________",
+                    "dr": "________________",
+                }
+
+                # Generar el contenido del ticket
+                contenido = [
+                    "      SIGNOS VITALES      ",
+                    "   CLINICA 'SANTA ELENA'   ",
+                    "",
+                    f"NOMBRE: {datos['nombre']}",
+                    "",
+                    f"PA:    {datos['pa']}",
+                    f"P:     {datos['p']}",
+                    f"SPO:   {datos['spo']}",
+                    f"GLI:   {datos['gli']}",
+                    f"T:     {datos['t']}",
+                    f"PESO:  {datos['peso']}",
+                    f"TALLA: {datos['talla']}",
+                    f"FR:    {datos['fr']}",
+                    f"DR:    {datos['dr']}",
+                    "",
+                    "  Gracias por su visita  ",
+                ]
+
+                # Unir las líneas con saltos de línea
+                contenido_texto = "\n".join(contenido)
+
+                # Devolver como respuesta de texto plano
+                response = HttpResponse(contenido_texto, content_type="text/plain")
+                response['Content-Disposition'] = 'inline; filename="signos_vitales.txt"'
+                return response
+
+            except Exception as e:
+                return HttpResponse(f"Error al generar el formato: {str(e)}", status=500)
+
+        elif action == 'imprimirdatopaciente':
+            try:
+                # Configurar la impresora (ajusta el puerto según tu sistema)
+                printer = Serial(devfile=puerto, baudrate=19200)  # Linux
+                # printer = Serial(devfile='COM3', baudrate=19200)  # Windows
+
+                # Encabezado (centrado)
+                printer.set(align='center')
+                printer.text("SIGNOS VITALES\n")
+                printer.text("CLINICA 'SANTA ELENA'\n")
+                printer.text("\n")  # Espacio en blanco
+
+                # Datos del paciente (alineación izquierda)
+                printer.set(align='left')
+                printer.text("NOMBRE: [Nombre del Paciente]\n")
+                printer.text("\n")  # Espacio en blanco
+
+                # Signos vitales (formato tabla)
+                printer.text("PA:    [Valor] mmHg\n")  # Presión arterial
+                printer.text("P:     [Valor] lpm\n")  # Pulso
+                printer.text("SPO:   [Valor] %\n")  # Saturación de oxígeno
+                printer.text("GLI:   [Valor] mg/dL\n")  # Glucosa
+                printer.text("T:     [Valor] °C\n")  # Temperatura
+                printer.text("PESO:  [Valor] kg\n")  # Peso
+                printer.text("TALLA: [Valor] cm\n")  # Talla
+                printer.text("FR:    [Valor] rpm\n")  # Frecuencia respiratoria
+                printer.text("DR:    [Valor]\n")  # Diagnóstico o observación
+
+                # Espacio y mensaje final
+                printer.text("\n")  # Espacio en blanco
+                printer.set(align='center')
+                printer.text("Gracias por su visita\n")
+
+                # Cortar papel (opcional)
+                printer.cut()
+
+                return JsonResponse({"result": True, "mensaje": u'Ticket enviado a la impresora correctamente.'})
+
+            except Exception as ex:
+                mensaje = f"{ex} - {sys.exc_info()[-1].tb_lineno}"
+                return JsonResponse({"result": False, "mensaje": mensaje})
+
+        elif action == 'imprimirticket':
+            try:
+                comprobante = ComprobantePago.objects.get(id=int(request.POST['id']))
+                pagos = comprobante.pagos.filter(status=True).values_list('rubro_id', flat=True)
+                rubros = Rubro.objects.filter(status=True, id__in=pagos)
+                total = rubros.aggregate(valor=Sum('valortotal'))['valor']
+
+                #PRUEBA DE CONEXIÓN
+                baudrate = 19200
+                with serial.Serial(puerto, baudrate, timeout=1) as ser:
+                    ser.write(b"Test\n")  # Enviar comando de prueba
+                    print(f"Conexión exitosa en {puerto}!")
+
+                # Configurar la impresora (ajusta el puerto según tu sistema)
+                printer = Serial(devfile=puerto, baudrate=19200)  # Linux
+                # printer = Serial(devfile='COM3', baudrate=19200)  # Windows
+
+                # Encabezado del ticket
+                printer.set(align='center')
+                printer.text("CLINICA SANTA ELENA\n")
+                printer.text("RUC: 0993285838001\n")
+                printer.text("Av. Colon y Pedro Brito J Montero\n")
+                printer.text("Tel: 0985893859 / 974593\n")
+                printer.text("-" * 32 + "\n")
+
+                # Detalles del comprobante
+                printer.set(align='left')
+                printer.text(f"COMPROBANTE No: {comprobante.numerocompleto}\n")
+                printer.text(f"FECHA: {comprobante.fecha_creacion.strftime('%Y-%m-%d %H:%M')}\n")
+                printer.text(f"CLIENTE: {comprobante.persona}\n")
+                printer.text(f"C.I.: {comprobante.persona.identificacion}\n")
+                printer.text("-" * 32 + "\n")
+
+                # Lista de rubros
+                printer.text("DESCRIPCION          TOTAL\n")
+                for rubro in rubros:
+                    printer.text(f"{rubro.nombre.ljust(20)} ${rubro.valortotal:.2f}\n")
+
+                # Total y cierre
+                printer.text("-" * 32 + "\n")
+                printer.set(align='right')
+                printer.text(f"TOTAL: ${total:.2f}\n")
+                printer.set(align='center')
+                printer.text("-" * 32 + "\n")
+                printer.text("Gracias por su preferencia\n")
+
+                # Cortar el papel (opcional)
+                printer.cut()
+
+                return JsonResponse({"result": True, "mensaje": u'Ticket enviado a la impresora correctamente.'})
+            except Exception as ex:
+                mensaje = f"{ex} - {sys.exc_info()[-1].tb_lineno}"
+                return JsonResponse({"result": False, "mensaje": mensaje})
 
         elif action == 'imprimircomprobante':
             try:
