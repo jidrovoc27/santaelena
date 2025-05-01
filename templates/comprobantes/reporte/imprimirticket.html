@@ -3,90 +3,135 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <style>
-        @page {
-            size: A4;
-            margin: 1cm;
-        }
-
+    <title>Ticket - Clínica Santa Elena</title>
+    <style type="text/css">
+        /* Reset completo para xhtml2pdf */
         body {
-            width: 226pt; /* Ancho simulando 80mm */
-            margin: 0 auto;
-            font-family: Arial, sans-serif;
-            font-size: 11px;
+            width: 80mm;
+            height: auto;
+            margin: 0 !important;
+            padding: 0.5mm 2mm 0.5mm 2mm !important;
+            font-family: "Courier New", monospace;
+            font-size: 9pt;
+            line-height: 1.1;
+            box-sizing: border-box;
         }
 
-        .center {
+        /* Elimina márgenes por defecto */
+        p, h1, h2, h3, h4, h5, h6 {
+            margin: 1mm 0 !important;
+            padding: 0 !important;
+        }
+
+        .header {
             text-align: center;
-        }
-
-        .line {
-            border-top: 1px dashed black;
-            margin: 5px 0;
-        }
-
-        .totales {
-            margin-top: 10px;
-        }
-
-        table {
-            width: 100%;
-        }
-
-        td {
-            vertical-align: top;
+            margin-bottom: 1mm !important;
+            padding: 0 !important;
         }
 
         .bold {
             font-weight: bold;
         }
+
+        .line {
+            border-top: 1px solid #000;
+            margin: 1mm 0 !important;
+            height: 0;
+            padding: 0;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1mm 0 !important;
+            padding: 0 !important;
+        }
+
+        td, th {
+            padding: 0.5mm 0 !important;
+            vertical-align: top;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 1mm !important;
+            font-size: 8pt;
+            padding: 0 !important;
+        }
+
+        .cut-line {
+            border-top: 1px dashed #000;
+            margin: 1mm 0 !important;
+            padding: 0;
+            text-align: center;
+            font-size: 7pt;
+        }
+
+        /* Fuerza el tamaño exacto */
+        .page-container {
+            width: 74mm; /* 80mm menos padding */
+            height: auto;
+            min-height: 10mm;
+            margin: 0 auto;
+            padding: 0;
+        }
     </style>
-    <title>Comprobante de Pago</title>
 </head>
 <body>
+    <div class="page-container">
+        <!-- Encabezado compacto -->
+        <div class="header bold">
+            CLÍNICA SANTA ELENA<br>
+            RUC: 0993285838001<br>
+            Av. Colón y Pedro Brito J Montero<br>
+            Tel: 0985893859 / 974593
+        </div>
 
-<div class="center bold">
-    CLÍNICA SANTA ELENA<br/>
-    RUC: 0993285838001<br/>
-    Av. Colón y Pedro Brito J Montero<br/>
-    Tel: 0985893859 / 974593
-</div>
+        <div class="line"></div>
 
-<div class="line"></div>
+        <!-- Datos del Comprobante - compactos -->
+        <p><span class="bold">Comprobante Nº:</span> {{ comprobante.numerocompleto }}</p>
+        <p><span class="bold">Fecha:</span> {{ comprobante.fecha_creacion|date:"d/m/Y H:i" }}</p>
+        <p><span class="bold">Cliente:</span> {{ comprobante.persona|truncatechars:24 }}</p>
+        <p><span class="bold">CI:</span> {{ comprobante.persona.identificacion|default:"-" }}</p>
 
-<p><strong>Comprobante Nº:</strong> {{ comprobante.numerocompleto }}</p>
-<p><strong>Fecha:</strong> {{ comprobante.fecha_creacion }}</p>
-<p><strong>Cliente:</strong> {{ comprobante.persona }}</p>
-<p><strong>CI:</strong> {{ comprobante.persona.identificacion }}</p>
+        <div class="line"></div>
 
-<div class="line"></div>
+        <!-- Tabla compacta -->
+        <table>
+            <thead>
+                <tr>
+                    <th class="bold">Descripción</th>
+                    <th class="bold right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rubro in rubros %}
+                <tr>
+                    <td>{{ rubro.nombre|truncatechars:28 }}</td>
+                    <td class="right">${{ rubro.valortotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-<table>
-    <thead>
-    <tr>
-        <td class="bold">Descripción</td>
-        <td class="bold" style="text-align:right">Total</td>
-    </tr>
-    </thead>
-    <tbody>
-    {% for rubro in rubros %}
-        <tr>
-            <td>{{ rubro.nombre }}</td>
-            <td style="text-align:right">$ {{ rubro.valortotal }}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+        <div class="line"></div>
 
-<div class="line"></div>
+        <!-- Total compacto -->
+        <p class="bold right">TOTAL: ${{ total|floatformat:2 }}</p>
 
-<p class="bold" style="text-align:right">TOTAL: $ {{ total }}</p>
+        <div class="line"></div>
 
-<div class="line"></div>
-
-<div class="center">
-    ¡Gracias por su preferencia!
-</div>
-
+        <!-- Pie de página mínimo -->
+        <div class="footer">
+            ¡Gracias por su preferencia!<br>
+            {% now "d/m/Y H:i" %}
+            <div class="cut-line"></div>
+        </div>
+    </div>
 </body>
 </html>

@@ -264,72 +264,82 @@ def view(request):
 
         elif action == 'imprimirticket':
             try:
-                import serial
-
-                with serial.Serial('COM1', 9600, timeout=5) as ser:
-                    ser.write(b"\x1B\x40")  # Inicializar
-                    ser.write(b"Texto directo\x0A")  # \x0A = salto de línea
-                    ser.write(b"\x1D\x56\x41")  # Cortar papel
+                import win32print
+                # Obtener datos del comprobante
                 comprobante = ComprobantePago.objects.get(id=int(request.POST['id']))
                 pagos = comprobante.pagos.filter(status=True).values_list('rubro_id', flat=True)
                 rubros = Rubro.objects.filter(status=True, id__in=pagos)
-                total = rubros.aggregate(valor=Sum('valortotal'))['valor']
+                total_general = rubros.aggregate(valor=Sum('valortotal'))['valor']
 
-                #PRUEBA DE CONEXIÓN
-                baudrate = 19200
-                with serial.Serial(puerto, baudrate, timeout=1) as ser:
-                    ser.write(b"Test\n")  # Enviar comando de prueba
-                    print(f"Conexión exitosa en {puerto}!")
+                # Construir el contenido del ticket
+                ticket_content = []
 
-                # Configurar la impresora (ajusta el puerto según tu sistema)
-                printer = Serial(devfile=puerto, baudrate=19200)  # Linux
-                # printer = Serial(devfile='COM3', baudrate=19200)  # Windows
+                # --- ENCABEZADO ---
+                ticket_content.append("CLINICA SANTA ELENA\n".center(42))
+                ticket_content.append("RUC: 0993285838001\n".center(42))
+                ticket_content.append("Av. Colon y Pedro Brito J Montero\n".center(42))
+                ticket_content.append("Tel: 0985893859 / 974593\n".center(42))
+                ticket_content.append("-" * 42 + "\n")
 
-                # Encabezado del ticket
-                printer.set(align='center')
-                printer.text("CLINICA SANTA ELENA\n")
-                printer.text("RUC: 0993285838001\n")
-                printer.text("Av. Colon y Pedro Brito J Montero\n")
-                printer.text("Tel: 0985893859 / 974593\n")
-                printer.text("-" * 32 + "\n")
+                # --- DETALLES DEL COMPROBANTE ---
+                ticket_content.append(f"COMPROBANTE No: {comprobante.numerocompleto}\n")
+                ticket_content.append(f"FECHA: {comprobante.fecha_creacion.strftime('%Y-%m-%d %H:%M')}\n")
+                ticket_content.append(f"CLIENTE: {comprobante.persona}\n")
+                ticket_content.append(f"C.I.: {comprobante.persona.identificacion}\n")
+                ticket_content.append("-" * 42 + "\n")
 
-                # Detalles del comprobante
-                printer.set(align='left')
-                printer.text(f"COMPROBANTE No: {comprobante.numerocompleto}\n")
-                printer.text(f"FECHA: {comprobante.fecha_creacion.strftime('%Y-%m-%d %H:%M')}\n")
-                printer.text(f"CLIENTE: {comprobante.persona}\n")
-                printer.text(f"C.I.: {comprobante.persona.identificacion}\n")
-                printer.text("-" * 32 + "\n")
-
-                # Lista de rubros
-                printer.text("DESCRIPCION          VAL      DESC     TOTAL\n")
-                printer.text("-" * 42 + "\n")  # Línea separadora
+                # --- LISTA DE RUBROS ---
+                ticket_content.append("{:<20} {:<8} {:<8} {:<8}\n".format(
+                    "DESCRIPCION", "VAL", "DESC", "TOTAL"))
+                ticket_content.append("-" * 42 + "\n")
 
                 for rubro in rubros:
-                    total = rubro.valortotal  # Asumo que valortotal ya es (valor - descuento)
-                    valor_original = rubro.valor  # Campo con el valor sin descuento
-                    descuento = rubro.valordescuento  # Campo con el monto descontado
+                    total = rubro.valortotal
+                    valor_original = rubro.valor
+                    descuento = rubro.valordescuento
 
-                    # Formatea la línea con 4 columnas alineadas
-                    linea = (
-                        f"{rubro.nombre.ljust(18)} "  # DESCRIPCIÓN (18 caracteres)
-                        f"${valor_original:.2f}   "  # VAL (alineado)
-                        f"${descuento:.2f}   "  # DESC (alineado)
-                        f"${total:.2f}\n"  # TOTAL
+                    ticket_content.append(
+                        "{:<20} ${:<7.2f} ${:<7.2f} ${:<7.2f}\n".format(
+                            rubro.nombre[:18],  # Limitar a 18 caracteres
+                            valor_original,
+                            descuento,
+                            total
+                        )
                     )
-                    printer.text(linea)
 
-                # Línea final con el total general (opcional)
-                printer.text("-" * 42 + "\n")
-                printer.text(f"TOTAL GENERAL: ${sum(r.valortotal for r in rubros):.2f}\n".rjust(42))
-                printer.set(align='center')
-                printer.text("-" * 32 + "\n")
-                printer.text("Gracias por su preferencia\n")
+                # --- TOTAL GENERAL ---
+                ticket_content.append("-" * 42 + "\n")
+                ticket_content.append("TOTAL GENERAL: ${:.2f}\n".format(
+                    total_general).rjust(42))
+                ticket_content.append("-" * 42 + "\n")
+                ticket_content.append("Gracias por su preferencia\n\n\n".center(42))
 
-                # Cortar el papel (opcional)
-                printer.cut()
+                # --- COMANDO PARA CORTAR PAPEL ---
+                ticket_content.append("\n\n")  # Espacio antes de cortar
+                ticket_content.append("\x1D\x56\x00")
 
-                return JsonResponse({"result": True, "mensaje": u'Ticket enviado a la impresora correctamente.'})
+                # --- IMPRESIÓN ---
+                # Convertir a bytes (codificación Windows-1252 común en impresoras térmicas)
+                raw_data = "".join(ticket_content).encode('cp1252')
+
+                # Obtener impresora predeterminada o especificar nombre exacto
+                printer_name = win32print.GetDefaultPrinter()
+
+                # Abrir e imprimir
+                hPrinter = win32print.OpenPrinter(printer_name)
+                try:
+                    win32print.StartDocPrinter(hPrinter, 1, ("Comprobante", None, "RAW"))
+                    win32print.StartPagePrinter(hPrinter)
+                    win32print.WritePrinter(hPrinter, raw_data)
+                    win32print.EndPagePrinter(hPrinter)
+                    win32print.EndDocPrinter(hPrinter)
+                finally:
+                    win32print.ClosePrinter(hPrinter)
+
+                return JsonResponse({
+                    "result": True,
+                    "mensaje": "Comprobante impreso correctamente"
+                })
             except Exception as ex:
                 mensaje = f"{ex} - {sys.exc_info()[-1].tb_lineno}"
                 return JsonResponse({"result": False, "mensaje": mensaje})
