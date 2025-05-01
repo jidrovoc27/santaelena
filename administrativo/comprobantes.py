@@ -45,7 +45,7 @@ def view(request):
     adduserdata(request, data)
     data['persona'] = persona = data['persona']
     data['sesion_caja'] = None
-    puerto = 'USB004'
+    puerto = 'COM3'
     if persona.puede_recibir_pagos():
         caja = persona.caja()
         sesion_caja = caja.sesion_caja()
