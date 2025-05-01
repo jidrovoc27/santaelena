@@ -45,7 +45,7 @@ def view(request):
     adduserdata(request, data)
     data['persona'] = persona = data['persona']
     data['sesion_caja'] = None
-    puerto = '/dev/ttyUSB0'
+    puerto = 'COM1'
     if persona.puede_recibir_pagos():
         caja = persona.caja()
         sesion_caja = caja.sesion_caja()
@@ -264,6 +264,12 @@ def view(request):
 
         elif action == 'imprimirticket':
             try:
+                import serial
+
+                with serial.Serial('COM1', 9600, timeout=5) as ser:
+                    ser.write(b"\x1B\x40")  # Inicializar
+                    ser.write(b"Texto directo\x0A")  # \x0A = salto de línea
+                    ser.write(b"\x1D\x56\x41")  # Cortar papel
                 comprobante = ComprobantePago.objects.get(id=int(request.POST['id']))
                 pagos = comprobante.pagos.filter(status=True).values_list('rubro_id', flat=True)
                 rubros = Rubro.objects.filter(status=True, id__in=pagos)
