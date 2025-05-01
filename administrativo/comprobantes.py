@@ -7,6 +7,8 @@ import json
 import random
 from datetime import datetime
 from escpos.printer import Serial
+from reportlab.lib.pagesizes import mm
+from reportlab.pdfgen import canvas
 import pyqrcode
 import xlsxwriter
 import xlwt
@@ -335,6 +337,110 @@ def view(request):
                 return conviert_html_to_pdf('comprobantes/reporte/imprimircomprobante.html',
                                             {'pagesize': 'A4',
                                              'comprobante': comprobante, 'rubros': rubros, 'total': total})
+            except Exception as ex:
+                pass
+
+        elif action == 'imprimirticketpdf':
+            try:
+                comprobante = ComprobantePago.objects.get(id=int(request.POST['id']))
+                pagos = comprobante.pagos.filter(status=True).values_list('rubro_id', flat=True)
+                rubros = Rubro.objects.filter(status=True, id__in=pagos)
+                total = rubros.aggregate(valor=Sum('valortotal'))['valor']
+                # Configura el tamaño del ticket (80mm de ancho x altura automática)
+                width = 80 * mm
+                height = 150 * mm  # Altura inicial, se ajustará
+
+                # Crea el buffer para el PDF
+                buffer = io.BytesIO()
+
+                # Configura el canvas con tamaño personalizado
+                c = canvas.Canvas(buffer, pagesize=(width, height))
+
+                # Establece la fuente (Courier es monoespaciada, ideal para tickets)
+                c.setFont("Courier", 9)
+
+                # --- CONTENIDO DEL TICKET ---
+                y_position = height - 10 * mm  # Comienza cerca del borde superior
+
+                # 1. Encabezado
+                c.setFont("Courier-Bold", 10)
+                c.drawString(10 * mm, y_position, "CLÍNICA SANTA ELENA")
+                y_position -= 5 * mm
+
+                c.setFont("Courier", 8)
+                c.drawString(10 * mm, y_position, "RUC: 0993285838001")
+                y_position -= 4 * mm
+                c.drawString(10 * mm, y_position, "Av. Colón y Pedro Brito J Montero")
+                y_position -= 4 * mm
+                c.drawString(10 * mm, y_position, "Tel: 0985893859 / 974593")
+                y_position -= 6 * mm
+
+                # Línea divisoria
+                c.line(5 * mm, y_position, 75 * mm, y_position)
+                y_position -= 5 * mm
+
+                # 2. Datos del comprobante
+                c.setFont("Courier", 9)
+                c.drawString(10 * mm, y_position, f"Comprobante Nº: {comprobante.numerocompleto}")
+                y_position -= 4 * mm
+                c.drawString(10 * mm, y_position, f"Fecha: {comprobante.fecha_creacion.strftime('%d/%m/%Y %H:%M')}")
+                y_position -= 4 * mm
+                c.drawString(10 * mm, y_position, f"Cliente: {comprobante.persona.__str__()[:20]}")
+                y_position -= 4 * mm
+                c.drawString(10 * mm, y_position, f"CI: {comprobante.persona.identificacion or '-'}")
+                y_position -= 6 * mm
+
+                # Línea divisoria
+                c.line(5 * mm, y_position, 75 * mm, y_position)
+                y_position -= 5 * mm
+
+                # 3. Rubros (tabla)
+                c.setFont("Courier-Bold", 9)
+                c.drawString(10 * mm, y_position, "Descripción")
+                c.drawString(60 * mm, y_position, "Total")
+                y_position -= 5 * mm
+
+                c.setFont("Courier", 8)
+                for rubro in rubros:
+                    c.drawString(10 * mm, y_position, rubro.nombre[:28])  # Limita a 28 caracteres
+                    c.drawString(60 * mm, y_position, f"$ {rubro.valortotal:.2f}")
+                    y_position -= 4 * mm
+
+                # Línea divisoria
+                y_position -= 3 * mm
+                c.line(5 * mm, y_position, 75 * mm, y_position)
+                y_position -= 5 * mm
+
+                # 4. Total
+                c.setFont("Courier-Bold", 10)
+                c.drawString(50 * mm, y_position, "TOTAL:")
+                c.drawString(60 * mm, y_position, f"$ {total:.2f}")
+                y_position -= 8 * mm
+
+                # 5. Pie de página
+                c.line(5 * mm, y_position, 75 * mm, y_position)
+                y_position -= 5 * mm
+
+                c.setFont("Courier", 8)
+                c.drawCentredString(40 * mm, y_position, "¡Gracias por su preferencia!")
+                y_position -= 4 * mm
+                c.drawCentredString(40 * mm, y_position, datetime.now().strftime("%d/%m/%Y %H:%M"))
+
+                # Línea de corte sugerida
+                y_position -= 6 * mm
+                c.setStrokeColorRGB(0.5, 0.5, 0.5)  # Gris
+                c.line(20 * mm, y_position, 60 * mm, y_position)
+                c.setFont("Courier", 6)
+                c.drawCentredString(40 * mm, y_position - 3 * mm, "--- Corte aquí ---")
+
+                # Guarda el PDF
+                c.save()
+
+                # Devuelve el PDF como respuesta
+                buffer.seek(0)
+                response = HttpResponse(buffer, content_type='application/pdf')
+                response['Content-Disposition'] = 'inline; filename="ticket.pdf"'
+                return response
             except Exception as ex:
                 pass
 

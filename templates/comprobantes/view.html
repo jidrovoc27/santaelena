@@ -68,6 +68,12 @@
             }, '_blank');
         }
 
+        function generarTicketPdf(id) {
+            openwindow('POST', '{{ request.path }}', {
+                'action': 'imprimirticketpdf', 'id': id
+            }, '_blank');
+        }
+
         function generarTicket(id) {
             openwindow('POST', '{{ request.path }}', {
                 'action': 'generarticket', 'id': id
@@ -164,6 +170,12 @@
                                        onclick="generarPdf('{{ l.id }}')">
                                         <i class="fa fa-file-pdf dropdown-item-icon" aria-hidden="true"></i>
                                         Generar comprobante
+                                    </a>
+
+                                    <a class="dropdown-item" style="cursor: pointer"
+                                       onclick="generarTicketPdf('{{ l.id }}')">
+                                        <i class="fa fa-file-pdf dropdown-item-icon" aria-hidden="true"></i>
+                                        Generar ticket PDF
                                     </a>
 
                                     <a class="dropdown-item" style="cursor: pointer"
