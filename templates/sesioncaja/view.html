@@ -2,6 +2,13 @@
 {% load extras %}
 {% block atras %}/{% endblock %}
 {% block extraheading %}
+    <script>
+        function generarPdf(id) {
+            openwindow('POST', '{{ request.path }}', {
+                'action': 'imprimirdetalle', 'id': id
+            }, '_blank');
+        }
+    </script>
 {% endblock %}
 {% block content %}
 
@@ -108,6 +115,11 @@
                                    aria-expanded="false">
                                     <i class="fa fa-ellipsis-v" aria-hidden="true"></i></a>
                                 <div class="dropdown-menu" style="">
+                                    <a class="dropdown-item" style="cursor: pointer"
+                                       onclick="generarPdf('{{ l.id }}')">
+                                        <i class="fa fa-file-pdf dropdown-item-icon" aria-hidden="true"></i>
+                                        Generar reporte
+                                    </a>
                                     <a class="dropdown-item" href="javascript:void(0);"
                                        onclick="ejecutar_accion('{{ l.id }}', 'Está por cerrar sesión de caja', 'cerrarsesion', '{{ request.path }}', 'Finalizar sesión')">
                                         <i class="fa fa-close dropdown-item-icon" aria-hidden="true"></i>

@@ -104,6 +104,23 @@ def view(request):
                 transaction.set_rollback(True)
                 return JsonResponse({"result": True, "mensaje": "Intentelo más tarde."}, safe=False)
 
+        elif action == 'imprimirdetalle':
+            try:
+                sesion = sesioncaja = SesionCaja.objects.get(id=int(request.POST['id']))
+                data['ingresos'] = pagos = sesioncaja.get_pagos_sesion()
+                data['totalingresos'] = totalingresos = sesioncaja.total_recibocaja_sesion()
+                data['egresos'] = egresos = sesioncaja.get_detallesalida_sesion()
+                data['totalegresos'] = totalegresos = sesioncaja.total_egresado_recibocaja_sesion()
+                data['totalneto'] = totalneto = sesioncaja.total_neto_recibocaja_sesion()
+                return conviert_html_to_pdf('sesioncaja/reporte/imprimirdetalle.html',
+                                            {'pagesize': 'A4',
+                                             'sesion': sesion, 'ingresos': pagos,
+                                             'totalingresos': totalingresos, 'egresos': egresos,
+                                             'totalegresos': totalegresos, 'totalneto': totalneto,
+                                             })
+            except Exception as ex:
+                pass
+
         return JsonResponse({"result": "bad", "mensaje": u"Solicitud Incorrecta."})
     else:
         if 'action' in request.GET:
