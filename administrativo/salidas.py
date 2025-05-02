@@ -58,7 +58,7 @@ def view(request):
                 if len(id_conceptos) == 0:
                     return JsonResponse({"result": True, 'mensaje': 'Por favor ingrese al menos un concepto con su valor'})
                 qscaja = SesionCaja.objects.filter(status=True, fecha=datetime.now().date(), abierta=True,
-                                                   caja__puntoventa__activo=True, caja__activo=True)
+                                                   caja__puntoventa__activo=True, caja__activo=True, caja__persona=persona)
                 sesioncj_ = None
                 if qscaja.exists():
                     sesioncj_ = qscaja.first()
