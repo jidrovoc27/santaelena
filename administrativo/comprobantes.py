@@ -64,7 +64,7 @@ def view(request):
                 if len(id_rubros) == 0:
                     return JsonResponse({"result": True, 'mensaje': 'Por favor ingrese al menos un rubro'})
                 qscaja = SesionCaja.objects.filter(status=True, fecha=datetime.now().date(), abierta=True,
-                                                   caja__puntoventa__activo=True, caja__activo=True)
+                                                   caja__puntoventa__activo=True, caja__activo=True, caja__persona=persona)
                 sesioncj_ = None
                 if qscaja.exists():
                     sesioncj_ = qscaja.first()
