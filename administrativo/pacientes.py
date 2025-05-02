@@ -220,7 +220,7 @@ def view(request):
 
             if action == 'add':
                 try:
-                    puede_realizar_accion(request, 'sga.puede_modificar_administrativos')
+                    #puede_realizar_accion(request, 'sga.puede_modificar_administrativos')
                     data['title'] = u'Adicionar paciente'
                     form = PacientesForm()
                     data['form'] = form
