@@ -119,6 +119,7 @@ def view(request):
                 numerocompleto = caja.puntoventa.establecimiento.strip() + "-" + caja.puntoventa.puntoventa.strip() + "-" + str(secuencia.factura).zfill(9)
                 nombrecompleto = f"{request.POST['nombres']} {request.POST['primer_apellido']} {request.POST['segundo_apellido']}"
                 newcomprobante = Factura(puntoventa=puntoventa,
+                                         tipoambiente=2,
                                          fecha=fecha_actual,
                                          paciente_id=persona_,
                                          nombre=nombrecompleto,
