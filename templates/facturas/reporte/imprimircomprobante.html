@@ -1,0 +1,142 @@
+{% load extras %}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<?python import sitetemplate ?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:py="http://purl.org/kid/ns#" py:extends="sitetemplate" lang="es">
+<head>
+    <meta charset=UTF-8">
+    <style type="text/css">
+        @page {
+        {#background-image: url('/media/fondoclinicareporte.jpeg');,#}
+            size: a4;/*size: a4 landscape;*/
+            @frame header_frame{
+            -pdf-frame-content: header_content;
+            left: 1.5cm;
+            right: 1cm;
+            top: 0cm;
+            height: 1cm;
+        }
+        @frame content_frame {
+        left: 1.5cm; right: 1cm; top: 1cm; bottom: 1cm;
+        }
+        @frame footer {
+        -pdf-frame-content:footerContent;
+        bottom: 0cm;
+        margin-left: 1.5cm;
+        margin-right: 1cm;
+        text-align:right;
+        height: 1cm;
+        }
+        }
+    </style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            margin: 0;
+            padding: 20px;
+        }
+        .header, .footer {
+            text-align: center;
+        }
+        .company-info {
+            text-align: left;
+        }
+        .invoice-info {
+            text-align: right;
+        }
+        .details {
+            margin-top: 20px;
+            width: 100%;
+        }
+        .details td, .details th {
+            border: 1px solid #000;
+            padding: 5px;
+        }
+        .details th {
+            background-color: #f2f2f2;
+        }
+        .summary {
+            margin-top: 10px;
+            width: 100%;
+        }
+        .summary td {
+            padding: 5px;
+        }
+        .totals {
+            float: right;
+            margin-top: 10px;
+            width: 300px;
+        }
+        .totals td {
+            padding: 5px;
+            border: 1px solid #000;
+        }
+    </style>
+    <title>Comprobante de pago</title>
+</head>
+<body>
+<div id="company_logo">
+    <img src='{{ request.path }}/media/fondoclinicareporte.jpeg' style="width: 20%!important;" class="top_image"/>
+</div>
+<div class="header">
+    <h2>Comprobante de pago</h2>
+</div>
+
+<table width="100%" style="text-align: left">
+    <tr style="text-align: left">
+        <td class="company-info" style="text-align: left">
+            <strong>CLÍNICA SANTA ELENA</strong><br>
+            <strong>RUC:</strong> 0993285838001<br>
+            <strong>Dirección:</strong> Av. Colón y Pedro Brito J Montero<br>
+            <strong>Teléfono:</strong> 0985893859 - 974593<br>
+            <strong>Email:</strong> elmedicoensuhogar@hotmail.com - doctorenriqueespinoza@gmail.com
+        </td>
+        <td class="invoice-info" style="text-align: left">
+            <strong>Comprobante N°:</strong> {{ comprobante.numerocompleto }}<br>
+            <strong>Fecha:</strong> {{ comprobante.fecha_creacion }}<br>
+            <strong>Cliente:</strong> {{ comprobante.persona }}<br>
+            <strong>Identificación:</strong> {{ comprobante.persona.identificacion }}<br>
+            <strong>Dirección:</strong> Milagro
+        </td>
+    </tr>
+</table>
+
+<table class="details">
+    <thead>
+    <tr>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th>Cant.</th>
+        <th>Precio Unitario</th>
+        <th>Descuento</th>
+        <th>Total</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for rubro in rubros %}
+        <tr>
+            <td>{{ rubro.id }}</td>
+            <td>{{ rubro.nombre }}</td>
+            <td>1</td>
+            <td>$ {{ rubro.valor }}</td>
+            <td>$ {{ rubro.valordescuento }}</td>
+            <td>$ {{ rubro.valortotal }}</td>
+        </tr>
+    {% endfor %}
+    <!-- Agrega más productos aquí -->
+    </tbody>
+</table>
+
+<table class="totals">
+    <tr style="text-align: center">
+        <td><strong>Total:</strong></td>
+        <td><strong>$ {{ total }}</strong></td>
+    </tr>
+</table>
+<br>
+<div class="footer">
+    <h1><b>Gracias por su preferencia.</b></h1>
+</div>
+</body>
+</html>

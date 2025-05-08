@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from datetime import datetime
 from decimal import Decimal
 
@@ -7,6 +8,7 @@ from django.db import models
 from django.db.models.functions import Coalesce
 from django.db.models import Sum, F, FloatField, Q
 from django.contrib.auth.models import User, Group
+from django.template.loader import get_template
 from administrativo.choices import *
 from django.utils import timezone
 from django.core.cache import cache
@@ -949,8 +951,8 @@ class Rubro(ModeloBase):
     persona = models.ForeignKey('administrativo.Persona', on_delete=models.PROTECT, verbose_name=u'Cliente')
     relacionados = models.ForeignKey('self', on_delete=models.PROTECT, blank=True, null=True, verbose_name=u'Rubro')
     nombre = models.CharField(max_length=1000, verbose_name=u'Nombre')
-    cuota = models.IntegerField(default=0, verbose_name=u'Cuota')
-    tipocuota = models.IntegerField(choices=TIPO_CUOTA, default=3)
+    cantidad = models.IntegerField(default=0, verbose_name=u'Cuota')
+    tipocuota = models.IntegerField(choices=TIPO_CUOTA, default=1)
     fecha = models.DateField(verbose_name=u'Fecha emisión')
     fechavence = models.DateField(verbose_name=u'Fecha vencimiento')
     preciounitario = models.DecimalField(default=0, max_digits=30, decimal_places=2, blank=True, null=True, verbose_name=u'Precio unitario')
@@ -1275,7 +1277,7 @@ class SesionCaja(ModeloBase):
         return DetalleSalidaRecaudacion.objects.filter(status=True, sesion=self)
 
     def total_recibocaja_sesion(self):
-        return null_to_decimal(ComprobantePago.objects.filter(sesioncaja=self).distinct().aggregate(valor=Sum('valor'))['valor'], 2)
+        return null_to_decimal(ComprobantePago.objects.filter(sesioncaja=self).distinct().aggregate(valor=Sum('valor'))['valor'], 2) + null_to_decimal(Factura.objects.filter(sesioncaja=self).distinct().aggregate(valor=Sum('total'))['valor'], 2)
 
     def total_egresado_recibocaja_sesion(self):
         return null_to_decimal(SalidaRecaudacion.objects.filter(sesioncaja=self).distinct().aggregate(valor=Sum('valor'))['valor'], 2)
@@ -1656,7 +1658,7 @@ class DetalleSalidaRecaudacion(ModeloBase):
 
 class SecuencialRecaudaciones(ModeloBase):
     puntoventa = models.ForeignKey(PuntoVenta, on_delete=models.PROTECT, verbose_name=u'Punto e venta')
-    factura = models.IntegerField(default=0, verbose_name=u'Secuencia Factura')
+    factura = models.IntegerField(default=1, verbose_name=u'Secuencia Factura')
     comprobante = models.IntegerField(default=0, verbose_name=u'Secuencia Comprobantes')
     salidarecaudacion = models.IntegerField(default=1, verbose_name=u'Secuencia salida recaudación')
     cajero = models.IntegerField(default=1, verbose_name=u'Secuencia Cajero')
@@ -1690,6 +1692,141 @@ class RecaudacionFinalSesionCaja(ModeloBase):
     def save(self, *args, **kwargs):
         super(RecaudacionFinalSesionCaja, self).save(*args, **kwargs)
 
+class Factura(ModeloBase):
+    puntoventa = models.ForeignKey(PuntoVenta, on_delete=models.PROTECT, verbose_name=u"Punto de venta")
+    sesioncaja = models.ForeignKey(SesionCaja, on_delete=models.PROTECT, verbose_name=u"Sesión de la caja")
+    estado = models.IntegerField(choices=ESTADO_FACTURA, default=1, verbose_name=u'Estado de la factura')
+    tipopago = models.IntegerField(choices=TIPO_PAGO_FACTURA, default=1, verbose_name=u'Estado de la factura')
+    fecha = models.DateField(verbose_name=u"Fecha")
+    numero = models.IntegerField(default=0, verbose_name=u"Secuencial de la factura")
+    numerocompleto = models.CharField(default='', max_length=20, verbose_name=u"Secuencial completo de la factura")
+    claveacceso = models.CharField(max_length=49, verbose_name=u'Clave de acceso')
+    tipoambiente = models.IntegerField(default=1, verbose_name=u'Tipo de ambiente')
+    tipoemision = models.IntegerField(default=1, verbose_name=u'Tipo de emision')
+    paciente = models.ForeignKey(Persona, on_delete=models.PROTECT, verbose_name=u"Persona")
+    tipo = models.IntegerField(choices=TIPO_IDENTIFICACION, default=1, verbose_name=u"Tipo de identificación")
+    identificacion = models.CharField(default='', max_length=20, verbose_name=u"Identificación")
+    nombre = models.CharField(default='', max_length=1000, verbose_name=u"Nombre")
+    email = models.CharField(default='', max_length=500, verbose_name=u"Email")
+    direccion = models.TextField(default='', verbose_name=u"Dirección")
+    telefono = models.CharField(default='', max_length=50, verbose_name=u"Teléfono")
+    ivaaplicado = models.ForeignKey(IvaAplicado, on_delete=models.PROTECT, blank=True, null=True, verbose_name=u"Iva aplicado")
+    subtotalbaseiva = models.DecimalField(max_digits=30, decimal_places=2, default=0)
+    subtotalbase0 = models.DecimalField(max_digits=30, decimal_places=2, default=0)
+    totaldescuento = models.DecimalField(max_digits=30, decimal_places=2, default=0)
+    totaliva = models.DecimalField(max_digits=30, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=30, decimal_places=2, default=0)
+    vigente = models.BooleanField(default=True, verbose_name=u"Factura vigente?")
+    pagos = models.ManyToManyField(Pago, blank=True, verbose_name=u"Pagos")
+    xml = models.TextField(blank=True, null=True, verbose_name=u'XML')
+    xmlgenerado = models.BooleanField(default=False, verbose_name=u"XML generado")
+    xmlfirmado = models.TextField(blank=True, null=True, verbose_name=u'XML firmado')
+    firmada = models.BooleanField(default=False, verbose_name=u"Firmada")
+    enviadasri = models.BooleanField(default=False, verbose_name=u"Enviada SRI")
+    falloenviarsri = models.BooleanField(default=False, verbose_name=u"Fallo de envío SRI")
+    mensajeenviosri = models.TextField(blank=True, null=True, verbose_name=u"Mensaje de envio SRI")
+    falloautorizarsri = models.BooleanField(default=False, verbose_name=u"Fallo de autorización SRI")
+    mensajeautorizacion = models.TextField(blank=True, null=True, verbose_name=u"Mensaje de autorización")
+    autorizada = models.BooleanField(default=False, verbose_name=u"Autorizada")
+    fechaautorizacion = models.DateTimeField(verbose_name=u"Fecha autorizacion", blank=True, null=True)
+    xmlarchivo = models.FileField(upload_to='facturas/xmlarchivo/', blank=True, null=True, verbose_name=u'Factura xml')
+    pdfarchivo = models.FileField(upload_to='facturas/formatopdf', blank=True, null=True, verbose_name=u'Factura en pdf')
+    autorizacion = models.TextField(verbose_name=u'Autorizacion')
+    weburl = models.CharField(max_length=32)
+    observacion = models.TextField(default='', blank=True, null=True, verbose_name=u'Observación')
+
+
+    def __str__(self):
+        return u'Factura No. %s' % self.numero
+
+    class Meta:
+        verbose_name = u"Factura"
+        verbose_name_plural = u"Facturas"
+
+    def persona_cajero(self):
+        return self.sesioncaja.caja.persona
+
+    def total_sin_impuesto_sri(self):
+        return Decimal(self.subtotalbase0 + self.subtotalbaseiva).quantize(Decimal('.01'))
+
+    def en_fecha(self):
+        return datetime.now().date() == self.fecha
+
+    def actualiza_subtotales(self):
+        self.subtotalbase0 = null_to_decimal(self.pagos.aggregate(valor=Sum('subtotal0'))['valor'], 2)
+        self.subtotalbaseiva = null_to_decimal(self.pagos.aggregate(valor=Sum('subtotaliva'))['valor'], 2)
+        self.totaldescuento = null_to_decimal(self.pagos.aggregate(valor=Sum('valordescuento'))['valor'], 2)
+        self.totaliva = null_to_decimal(self.pagos.aggregate(valor=Sum('iva'))['valor'], 2)
+        self.total = null_to_decimal(self.pagos.aggregate(valor=Sum('valortotal'))['valor'], 2)
+
+    def genera_clave_acceso_factura(self):
+        hoy = self.fecha
+        numero = self.numero
+        return self.generar_clave_acceso(hoy, numero, '01')
+
+    def generar_clave_acceso(self, fecha, numero, codigo):
+        from administrativo.funciones import miempresa
+        institucion = miempresa()
+        hoy = fecha
+        codigonumerico = str(
+            Decimal('%02d%02d%04d' % (hoy.day, hoy.month, hoy.year)) + Decimal(institucion.ruc) + Decimal(
+                '%3s%3s%9s' % (self.puntoventa.establecimiento, self.puntoventa.puntoventa, str(numero).zfill(9))))[:8]
+        parcial = "%02d%02d%04d%2s%13s%1d%3s%3s%9s%8s%1d" % (hoy.day, hoy.month, hoy.year, codigo, institucion.ruc,
+                                                             self.tipoambiente, self.puntoventa.establecimiento,
+                                                             self.puntoventa.puntoventa, str(numero).zfill(9),
+                                                             codigonumerico, self.tipoemision)
+        digitoverificador = self.generar_digito_verificador(parcial)
+        return parcial + str(digitoverificador)
+
+    def generar_digito_verificador(self, cadena):
+        basemultiplicador = 7
+        aux = [0 for i in cadena]
+        multiplicador = 2
+        total = 0
+        verificador = 0
+        for i in range(len(cadena) - 1, -1, -1):
+            aux[i] = int(cadena[i]) * multiplicador
+            multiplicador += 1
+            if multiplicador > basemultiplicador:
+                multiplicador = 2
+            total += aux[i]
+        if total == 0 or total == 1:
+            verificador = 0
+        else:
+            verificador = 0 if (11 - (total % 11)) == 11 else 11 - (total % 11)
+        if verificador == 10:
+            verificador = 1
+        return verificador
+
+    def numero_secuencial(self):
+        return str(self.numero).zfill(9) if self.numero else 0
+
+    def getpagos(self):
+        pagos = []
+        for pago_ in self.pagos.filter(status=True):
+            pagos.append([str(self.tipopago), pago_.valortotal])
+        return pagos
+
+    def save(self, *args, **kwargs):
+        self.numerocompleto = self.numerocompleto.upper().strip()
+        self.identificacion = self.identificacion.upper().strip()
+        self.nombre = self.nombre.upper().strip()
+        self.direccion = self.direccion.upper().strip()
+        self.telefono = self.telefono.upper().strip()
+        self.observacion = self.observacion.upper().strip() if self.observacion else ""
+        if self.id:
+            self.actualiza_subtotales()
+        super(Factura, self).save(*args, **kwargs)
+
+    def generar_xml(self):
+        template = get_template("facturas/sri/xml.html")
+        d = ({'comprobante': self,
+              'institucion': miempresa()})
+        xml_content = template.render(d)
+        self.xml = xml_content
+        self.weburl = uuid.uuid4().hex
+        self.xmlgenerado = True
+        self.save()
 
 class Perms(models.Model):
     class Meta:

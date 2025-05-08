@@ -1,0 +1,324 @@
+{% load extras %}
+<input type="hidden" name="id" value="{{ id }}"/>
+<input type="hidden" name="action" value="{{ action }}"/>
+
+<div class="row">
+    {% for field in form %}
+        {% if field.field.widget.attrs.separator %}
+            <div class="separator my-4">
+                <h6 class="separator-title">
+                    {% if field.field.widget.attrs.separatortitle %}
+                        {{ field.field.widget.attrs.separatortitle }}
+                    {% endif %}
+                </h6>
+            </div>
+        {% endif %}
+
+        <div id="fieldset_{{ field.name }}" class="mb-3 col-lg-6">
+            <label class="form-label"><b>{{ field.label }}:</b></label>
+            {{ field }}
+            {% if field.help_text %}
+                <small class="form-text text-muted">{{ field.help_text }}</small>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+<div class="row">
+    <!-- Columna Izquierda - Información Personal -->
+    <div class="col-md-5 pe-4">
+        <!-- Sección de Datos Personales -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Datos para la facturación</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label"><b>Nombres:</b></label>
+                        <input type="text" class="form-control" id="nombres" name="nombres" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><b>Primer Apellido:</b></label>
+                        <input type="text" class="form-control" id="primer_apellido" name="primer_apellido" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><b>Segundo Apellido:</b></label>
+                        <input type="text" class="form-control" id="segundo_apellido" name="segundo_apellido">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><b>Tipo identificación:</b></label>
+                        <select id="tipoidentificacion" name="tipoidentificacion" style="width: 100%">
+                            {% for tipoidentificacion_ in tipoidentificaciones %}
+                                <option value="{{ tipoidentificacion_.0 }}"
+                                        {% if forloop.first %}selected{% endif %}>{{ tipoidentificacion_.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><b>Identificación:</b></label>
+                        <input id="identificacion" type="text" class="form-control" name="identificacion" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><b>Sexo:</b></label>
+                        <select id="sexo" name="sexo" style="width: 100%">
+                            {% for sexo in sexos %}
+                                <option value="{{ sexo.id }}"
+                                        {% if forloop.first %}selected{% endif %}>{{ sexo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><b>Correo:</b></label>
+                        <input type="email" id="correo" class="form-control" name="correo">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><b>Teléfono:</b></label>
+                        <input type="text" id="telefono" class="form-control" name="telefono">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label"><b>Dirección:</b></label>
+                        <textarea class="form-control" id="direccion" name="direccion" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos del formulario dinámico -->
+
+    </div>
+
+    <!-- Columna Derecha - Detalle de Factura -->
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Detalle de Factura</h5>
+                <button type="button" id="add-item-btn" class="btn btn-success btn-sm">
+                    <i class="fe fe-plus"></i> Agregar Rubro
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table id="items-table" class="table table-hover mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th width="20%">Rubro</th>
+                            <th width="20%">Cantidad</th>
+                            <th width="20%">Valor</th>
+                            <th width="20%">Descuento</th>
+                            <th width="20%">Total</th>
+                            <th width="15%">Acción</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <!-- Filas se agregarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="d-flex justify-content-end mt-3 gap-2">
+            <button type="submit" id="submit" class="btn btn-success">
+                <i class="fa fa-money-bill"></i> Facturar
+            </button>
+            <a href="javascript:;" class="btn btn-danger" data-bs-dismiss="modal">
+                <i class="fa fa-times-circle"></i> Cancelar
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .separator {
+        position: relative;
+        margin: 1.5rem 0;
+    }
+
+    .separator-title {
+        position: relative;
+        display: inline-block;
+        background: white;
+        padding: 0 10px;
+        font-size: 1rem;
+        color: #495057;
+    }
+
+    .separator::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        border-top: 1px solid #dee2e6;
+        z-index: -1;
+    }
+
+    .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+        border-bottom: 1px solid #e0e0e0;
+        padding: 12px 16px;
+    }
+
+    .table th {
+        white-space: nowrap;
+        padding: 12px 8px;
+    }
+</style>
+
+{{ form.media|safe }}
+<script>
+    function consultarInformacionPersona(personaId) {
+        $.ajax({
+            url: '{{ request.path }}',
+            type: 'POST',
+            data: {
+                'id': personaId,
+                'action': 'obtener_detalle_persona'
+            },
+            success: function (response) {
+                let datospersona = response[0]
+                // Actualiza los campos del formulario con los datos de la persona
+                    $('#nombres').val(datospersona.nombres);
+                    $('#primer_apellido').val(datospersona.primerapellido);
+                    $('#segundo_apellido').val(datospersona.segundoapellido);
+                    $('#tipoidentificacion').val(datospersona.tipoidentificacion).trigger('change');
+                    $('#identificacion').val(datospersona.identificacion);
+                    $('#sexo').val(datospersona.sexo).trigger('change');
+                    $('#correo').val(datospersona.correo);
+                    $('#telefono').val(datospersona.telefono);
+                    $('#direccion').val(datospersona.direccion);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                toastr.error('Ocurrió un error al consultar la persona');
+            }
+        });
+    }
+
+    $(function () {
+        $("select").select2({width: '80%'});
+        $('#id_persona').select2({
+            width: '65%',
+            language: {
+                inputTooShort: function () {
+                    return "Ingresa al menos un caracter";
+                },
+                "noResults": function () {
+                    return "Sin resultados";
+                },
+                "searching": function () {
+                    return "Consultando...";
+                }
+            },
+            allowClear: true,
+            ajax: {
+                delay: 250,
+                type: 'POST',
+                url: '{{ request.path }}',
+                data: function (params) {
+                    return {
+                        term: params.term,
+                        'action': 'buscar_persona'
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data
+                    };
+                },
+            },
+            placeholder: 'Busca una persona',
+            minimumInputLength: 1,
+        }).on('select2:select', function (e) {
+            // Esta función se ejecuta cuando se selecciona un elemento
+            var selectedData = e.params.data;
+            consultarInformacionPersona(selectedData.id);
+        });
+        ;
+    });
+    $(document).ready(function () {
+        $('#add-item-btn').click(function () {
+            // Obtener el select de rubro
+            var rubroSelect = $('#id_rubro');
+            var selectedValue = rubroSelect.val();
+
+            // Verificar si se ha seleccionado un rubro
+            if (selectedValue) {
+                // Verificar si el rubro ya existe en la tabla
+                var existeEnTabla = false;
+                $('#items-table tbody tr').each(function () {
+                    var idExistente = $(this).find('input[type="hidden"]').val();
+                    if (idExistente === selectedValue) {
+                        existeEnTabla = true;
+                        return false; // Salir del each
+                    }
+                });
+
+                if (existeEnTabla) {
+                    alert('Este rubro ya ha sido agregado a la tabla');
+                    return; // Detener la ejecución
+                }
+
+                // Obtener el texto seleccionado
+                var selectedText = rubroSelect.find('option:selected').text();
+
+                $.ajax({
+                    type: "GET",
+                    url: "{{ request.path }}",
+                    data: {'id': selectedValue, 'action': 'getValor'},
+                    success: function (data) {
+                        $.unblockUI();
+                        if (data.result === true) {
+                            // Crear nueva fila para la tabla
+                            var newRow = '<tr>' +
+                                '<td style="text-align: center;display:none"><input style="text-align: center" name="id_rubros" type="hidden" value="' + selectedValue + '"></td>' +
+                                '<td style="text-align: center;">' + selectedText + '</td>' +
+                                '<td style="text-align: center;"><input style="text-align: center;width: 100%" class="input-cantidad" name="valores_cantidad" type="number" value="' + 1 + '"></td>' +
+                                '<td style="text-align: center;"><input style="text-align: center;width: 100%" class="input-rubro" name="valores_rubros" type="number" value="' + data.valor + '"></td>' +
+                                '<td style="text-align: center;"><input style="text-align: center;width: 100%" class="input-descuento" name="valores_descuentos" type="number" value="0"></td>' +
+                                '<td style="text-align: center;"><input style="text-align: center;width: 100%" class="input-total" name="valores_totales" type="number" readonly value="' + data.valor + '"></td>' +
+                                '<td style="text-align: center;"><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fe fe-trash"></i></button></td>' +
+                                '</tr>';
+
+                            $('#items-table tbody').append(newRow);
+
+                            // --- Nuevo código: Actualizar total automáticamente ---
+                            $(document).on('input', '.input-cantidad, .input-rubro, .input-descuento', function () {
+                                var row = $(this).closest('tr');
+                                var cantidad = parseFloat(row.find('.input-cantidad').val()) || 0;
+                                var rubro = parseFloat(row.find('.input-rubro').val()) || 0;
+                                var descuento = parseFloat(row.find('.input-descuento').val()) || 0;
+                                var subtotal = cantidad * rubro;
+                                var total = subtotal - descuento;
+
+                                row.find('.input-total').val(total.toFixed(2)); // Formato con 2 decimales
+                            });
+                            // --- Fin del nuevo código ---
+
+                            rubroSelect.val('');
+                        } else {
+                            alert('Error al consultar');
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        $.unblockUI();
+                        console.error('Error:', textStatus, errorThrown);
+                    }
+                });
+            } else {
+                alert('Por favor seleccione un rubro primero');
+            }
+        });
+
+// Evento para eliminar filas
+        $(document).on('click', '.remove-row', function () {
+            $(this).closest('tr').remove();
+        });
+    });
+</script>

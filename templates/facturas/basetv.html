@@ -1,0 +1,240 @@
+{% extends "base_system.html" %}
+{% load extras %}
+{% block content_js %}
+    <script src="/static/bootstrap5/js/formquestion.js?0.24"></script>
+    <script type="text/javascript" src="/static/ckeditor/ckeditor-init.js?v=1.0.0"
+            data-ckeditor-basepath="/static/ckeditor/ckeditor/" id="ckeditor-init-script"></script>
+    <script>
+        function formModal(id, text, action, footer = true, ext) {
+            bloqueointerface()
+            $('#footermodal').show();
+            $.ajax({
+                type: "GET",
+                url: `{{ request.path }}`,
+                data: {
+                    'action': action,
+                    'id': id,
+                    'ext': ext,
+                },
+                success: function (data) {
+                    $.unblockUI();
+                    if (data.result === true) {
+                        if (footer === true) {
+                            $('#footermodal').hide();
+                        }
+                        $('#itemspanel .panelbody').html(data.data);
+                        $('#itemspanel .paneltitle').html(text.toUpperCase());
+                        $("#itemspanel").modal({backdrop: 'static', width: '900px'}).modal('show');
+                    } else {
+                        mensajeDanger(data.message);
+                    }
+                },
+                error: function () {
+                    $.unblockUI();
+                    mensajeDanger("Error de conexión.");
+                },
+                dataType: "json"
+            });
+        }
+
+        function nuevaFactura(id, text, action, footer = true, ext) {
+            bloqueointerface()
+            $('#footermodal').show();
+            $.ajax({
+                type: "GET",
+                url: `{{ request.path }}`,
+                data: {
+                    'action': action,
+                    'id': id,
+                    'ext': ext,
+                },
+                success: function (data) {
+                    $.unblockUI();
+                    if (data.result === true) {
+                        if (footer === true) {
+                            $('#footermodal').hide();
+                        }
+                        $('#itemspanel .panelbody').html(data.data);
+                        $('#itemspanel .paneltitle').html(text.toUpperCase());
+                        $("#itemspanel").modal({backdrop: 'static', width: '100%'}).modal('show');
+                    } else {
+                        mensajeDanger(data.message);
+                    }
+                },
+                error: function () {
+                    $.unblockUI();
+                    mensajeDanger("Error de conexión.");
+                },
+                dataType: "json"
+            });
+        }
+
+        function eliminarajax(pk, nombre, accion, url = '{{ request.path }}', titulo = 'Estás por eliminar este registro:') {
+            Swal.fire({
+                html: `<b>${titulo}</b><p>${nombre}</p>`,
+                text: "Esta acción es irreversible",
+                type: 'warning',
+                showCancelButton: true,
+                allowOutsideClick: false,
+                confirmButtonText: 'Sí, deseo hacerlo',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.value) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '{{ reques.path }}',
+                        async: false,
+                        data: {
+                            csrfmiddlewaretoken: '{{ csrf_token }}',
+                            action: accion,
+                            id: pk,
+                        },
+                        dataType: "json",
+                        beforeSend: function () {
+                            bloqueointerface();
+                        }
+                    }).done(function (data) {
+                        setTimeout($.unblockUI, 1);
+                        if (data.error === false) {
+                            if (data.refresh) {
+                                alertaSuccess(data.mensaje)
+                                location.reload();
+                            } else {
+                                location.reload();
+                            }
+                        } else {
+                            alertaDanger(data.mensaje)
+                        }
+                    }).fail(function (jqXHR, textStatus, errorThrown) {
+                        setTimeout($.unblockUI, 1);
+                        alertaDanger('Error en el servidor', 10000)
+                    }).always(function () {
+                    });
+                } else {
+                }
+            })
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+{% endblock %}
+{% block heading %}
+    <link rel="stylesheet" href="/static/firmaelectronica/cabonads.css?0.3.3">
+    <style>
+        .offline {
+            -webkit-filter: grayscale(100%);
+            filter: grayscale(100%);
+        }
+
+        .iconofile {
+            margin-left: -3%;
+        }
+
+        @media screen and (min-width: 720px) {
+            .iconofile {
+                margin-left: -2%;
+            }
+        }
+
+        .nav-link:hover i {
+            animation: rotation 2s infinite linear;
+        }
+
+        @keyframes rotation {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .row {
+            margin-left: calc(var(--bs-gutter-x) * -.5) !important;
+        }
+    </style>
+
+    {% block extraheading %}
+    {% endblock %}
+{% endblock %}
+
+{% block canvas %}
+    <div class="modal fade static" data-bs-focus="false" id="itemspanel" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="max-width: 90%; min-width: 80%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><b class="paneltitle">FORMULARIO MODAL</b></h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <form class="form-horizontal form-modal" autocomplete="off" method="post"
+                      enctype="multipart/form-data" action="{{ request.path }}">
+                    {% csrf_token %}
+                    <div class="container-fluid">
+                        <div class="row panelbody">
+                            <!-- Tu contenido del formulario se renderizará aquí -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" id="footermodal">
+                <button type="button" class="btn btn-default" data-bs-dismiss="modal">
+                    <i class="fa fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class='row'>
+        <div class='col-lg-12'>
+            <div class="headtitle">
+                <h3 class="texto-blue">Comprobantes</h3>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-3">
+            <nav class="navbar navbar-expand-md navbar-light shadow-sm mb-4 mb-lg-0 sidenav caja-menu">
+                <div class="navbar-collapse" id="sidenav" style="margin-top: 4px;">
+                    <div class="navbar-nav flex-column">
+                        <ul class="list-unstyled ms-n2 mb-4">
+                            <hr>
+                            <li class="nav-item {% if request.session.viewactivo == 1 %}active{% endif %}">
+                                <a class="nav-link" href="{{ request.path }}">
+                                    <i class="fa fa-cubes nav-icon"></i> Comprobantes</a>
+                            </li>
+                            <li class="nav-item">
+                                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin: 20px; justify-content: flex-start;">
+                                    <!-- Card 1: Total recaudado -->
+                                    <div style="font-family: Arial, sans-serif; width: 50%; padding: 15px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); background-color: #ffffff;">
+                                        <div style="font-size: 12px; color: #555555; margin-bottom: 8px; font-weight: bold;">
+                                            Total recaudado
+                                        </div>
+                                        <div style="font-size: 20px; color: #2c3e50; font-weight: bold;">
+                                            <span style="color: #27ae60;">$</span>{{ tota_recaudado }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Card 2: Otro concepto -->
+                                    <div style="font-family: Arial, sans-serif; width: 40%; padding: 15px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); background-color: #ffffff;">
+                                        <div style="font-size: 12px; color: #555555; margin-bottom: 8px; font-weight: bold;">
+                                            Ventas
+                                        </div>
+                                        <div style="font-size: 20px; color: #2c3e50; font-weight: bold;">
+                                            <span style="color: #3498db;">+</span>{{ tota_ventas }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        <div class="col-lg-9">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+
+{% endblock %}

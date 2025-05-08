@@ -16,11 +16,7 @@ TIPO_RUBRO = (
 )
 
 TIPO_CUOTA = (
-    (1, u'INSCRIPCION'),
-    (2, u'MATRICULA'),
-    (3, u'CUOTA'),
-    (4, u'CANTIDAD'),
-    (5, u'ADICIONAL'),
+    (1, u'CANTIDAD'),
 )
 
 ESTADO_SESION_PLACETOPAY = (
@@ -118,6 +114,22 @@ MES_CHOICES = (
     (11, "Noviembre"),
     (12, "Diciembre"),
 )
+
+ESTADO_FACTURA = (
+    (1, u'PENDIENTE'),
+    (2, u'FINALIZADA'),
+)
+
+TIPO_PAGO_FACTURA = (
+    (1, u'EFECTIVO'),
+    (20, u'CHEQUE'),
+    (20, u'TRANSFERENCIA/DEPÓSITO'),
+    (17, u'DINERO ELECTRÓNICO'),
+    (19, u'TARJETA CRÉDITO'),
+    (16, u'TARJETA DÉBITO'),
+    (18, u'TARJETA PREPAGO'),
+)
+
 
 APP_LABEL = (
     (1, u'SGA'),
