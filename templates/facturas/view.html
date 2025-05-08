@@ -171,17 +171,36 @@
                                     <i class="fa fa-check tu" title="Firmada" style="color: green"></i>
                                 {% else %}
                                     <i class="fa fa-hourglass-half tu fa-info" title="No firmada"></i>
+                                    {% if l.xmlgenerado and l.xml %}
+                                    <br>
+                                    <a class="btn btn-info" style="cursor: pointer"
+                                       onclick="ejecutar_accion('{{ l.id }}', 'Está por firmar el xml', 'firmarxml', '{{ request.path }}', 'Firmar xml')">
+                                        Firmar xml
+                                    </a>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                             <td style="text-align: center">
                                 {% if l.enviadasri %}
-                                    {% if l.falloenviodasri %}
-                                        <i class="fa fa-remove tu" title="Error de envio" style="color: red"></i>
+                                    {% if l.falloenviarsri %}
+                                        <i class="fa fa-remove tu" title="{{ l.mensajeenviosri }}" style="color: red"></i>
+                                        <br>
+                                        <a class="btn btn-info" style="cursor: pointer"
+                                       onclick="ejecutar_accion('{{ l.id }}', 'Está por enviar el xml al SRI', 'enviarsri', '{{ request.path }}', 'Enviar xml')">
+                                        Enviar al SRI
+                                    </a>
                                     {% else %}
                                         <i class="fa fa-check tu" title="Enviada al SRI" style="color: green"></i>
                                     {% endif %}
                                 {% else %}
                                     <i class="fa fa-hourglass-half tu fa-info" title="No enviada"></i>
+                                    {% if l.firmada and l.xmlfirmado %}
+                                        <br>
+                                        <a class="btn btn-info" style="cursor: pointer"
+                                       onclick="ejecutar_accion('{{ l.id }}', 'Está por enviar el xml al SRI', 'enviarsri', '{{ request.path }}', 'Enviar xml')">
+                                        Enviar al SRI
+                                    </a>
+                                    {% endif %}
                                 {% endif %}
 
                             </td>
@@ -194,6 +213,13 @@
                                     {% endif %}
                                 {% else %}
                                     <i class="fa fa-hourglass-half tu fa-info" title="No autorizada"></i>
+                                    {% if l.enviadasri and not l.falloenviarsri %}
+                                        <br>
+                                        <a class="btn btn-info" style="cursor: pointer"
+                                       onclick="ejecutar_accion('{{ l.id }}', 'Está por enviar a autorizar el xml en el SRI', 'autorizarsri', '{{ request.path }}', 'Autorizar en SRI')">
+                                        Autorizar en SRI
+                                    </a>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                             <td style="text-align: center; width: 5%;">
@@ -202,33 +228,13 @@
                                    aria-expanded="false">
                                     <i class="fa fa-ellipsis-v" aria-hidden="true"></i></a>
                                 <div class="dropdown-menu" style="">
+                                    {% if not l.autorizada %}
                                     <a class="dropdown-item" style="cursor: pointer"
-                                       onclick="generarTicket('{{ l.id }}')">
-                                        <i class="fa fa-file-text dropdown-item-icon" aria-hidden="true"></i>
-                                        Generar ticket
+                                       onclick="ejecutar_accion('{{ l.id }}', 'Está por reiniciar el xml', 'reiniciarxml', '{{ request.path }}', 'Reiniciar xml')">
+                                        <i class="fa fa-history dropdown-item-icon" aria-hidden="true"></i>
+                                        Reiniciar XML
                                     </a>
-                                    <a class="dropdown-item" style="cursor: pointer"
-                                       onclick="generarPdf('{{ l.id }}')">
-                                        <i class="fa fa-file-pdf dropdown-item-icon" aria-hidden="true"></i>
-                                        Generar comprobante
-                                    </a>
-
-                                    <a class="dropdown-item" style="cursor: pointer"
-                                       onclick="generarTicketPdf('{{ l.id }}')">
-                                        <i class="fa fa-file-pdf dropdown-item-icon" aria-hidden="true"></i>
-                                        Generar ticket PDF
-                                    </a>
-
-                                    <a class="dropdown-item" style="cursor: pointer"
-                                       onclick="generarsignosvitales('{{ l.id }}')">
-                                        <i class="fa fa-file-text dropdown-item-icon" aria-hidden="true"></i>
-                                        Generar signos vitales
-                                    </a>
-                                    {#                                    <a class="dropdown-item" href="javascript:void(0);"#}
-                                    {#                                       onclick="formModal('{{ l.id }}','Editar: {{ l.nombre }}', 'edit', true)">#}
-                                    {#                                        <i class="fa fa-pen-to-square dropdown-item-icon" aria-hidden="true"></i>#}
-                                    {#                                        Editar#}
-                                    {#                                    </a>#}
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>

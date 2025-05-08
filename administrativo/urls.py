@@ -1,6 +1,6 @@
 from django.urls import re_path, path
 from administrativo import views, adm_producto, administrativos, adm_modulos, tiposrubros, puntofacturacion, comprobantes, \
-    sesioncaja, pacientes, salidas, facturas
+    sesioncaja, pacientes, salidas, facturas, sign
 from administrativo.commonviews import *
 from django.conf.urls.static import static
 
@@ -15,6 +15,7 @@ urlpatterns = [
     re_path(r'^facturas', facturas.view, name='facturas'),
     re_path(r'^pacientes', pacientes.view, name='pacientes'),
     re_path(r'^sesioncaja', sesioncaja.view, name='sesioncaja'),
+    re_path(r'^sign_factura/(?P<weburl>.+)$', sign.factura, name=u'sagest_sign_factura'),
     re_path(r'^loginclinica$', login_user, name='login_view'),
     re_path(r'^logoutclinica$', logout_user, name='logout_user'),
 ]

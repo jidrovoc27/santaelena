@@ -130,6 +130,16 @@ TIPO_PAGO_FACTURA = (
     (18, u'TARJETA PREPAGO'),
 )
 
+# Mapeo adicional para códigos SRI (opcional)
+CODIGOS_SRI = {
+    1: '01',
+    2: '20',
+    3: '20',
+    4: '17',
+    5: '19',
+    6: '16',
+    7: '18',
+}
 
 APP_LABEL = (
     (1, u'SGA'),

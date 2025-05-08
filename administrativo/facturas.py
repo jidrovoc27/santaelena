@@ -172,6 +172,46 @@ def view(request):
                 transaction.set_rollback(True)
                 return JsonResponse({"result": True, 'mensaje': str(ex)})
 
+        if action == 'firmarxml':
+            try:
+                factura = Factura.objects.get(id=int(request.POST['id']))
+                return JsonResponse(factura.firmar_xml_factura())
+            except Exception as ex:
+                return JsonResponse({"result": False, "mensaje": u'Error al firmar xml'})
+
+        if action == 'enviarsri':
+            try:
+                factura = Factura.objects.get(id=int(request.POST['id']))
+                return JsonResponse(factura.enviar_sri())
+            except Exception as ex:
+                return JsonResponse({"result": False, "mensaje": u'Error al firmar xml'})
+
+        if action == 'autorizarsri':
+            try:
+                factura = Factura.objects.get(id=int(request.POST['id']))
+                return JsonResponse(factura.autorizar_sri())
+            except Exception as ex:
+                return JsonResponse({"result": False, "mensaje": u'Error al firmar xml'})
+
+        if action == 'reiniciarxml':
+            try:
+                with transaction.atomic():
+                    factura = Factura.objects.get(pk=request.POST['id'])
+                    factura.xmlgenerado = False
+                    factura.firmada = False
+                    factura.enviadasri = False
+                    factura.falloenviodasri = False
+                    factura.falloautorizacionsri = False
+                    factura.mensajeautorizacion = ''
+                    factura.xml = ''
+                    factura.xmlfirmado = ''
+                    factura.save(request)
+                    factura.generar_xml()
+                    return JsonResponse({"result": True})
+            except Exception as ex:
+                transaction.set_rollback(True)
+                return JsonResponse({"result": False, "mensaje": f"Error al reiniciar xml: {ex}"})
+
         elif action == 'buscar_persona':
             try:
                 from administrativo.models import Persona

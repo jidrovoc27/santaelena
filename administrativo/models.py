@@ -1,5 +1,11 @@
+import sys
 import datetime
 import uuid
+import base64
+from administrativo.procesofirmaxml import firma_xml
+from administrativo.variablesfirma import *
+from zeep import Client
+import subprocess
 from datetime import datetime
 from decimal import Decimal
 
@@ -623,6 +629,7 @@ class Empresa(ModeloBase):
     ruc = models.CharField(default='', max_length=13, verbose_name=u'RUC')
     contribuyenteespecial = models.CharField(default='', max_length=13, verbose_name=u'Contribuyente Especial')
     direccion = models.CharField(default='', max_length=300, verbose_name=u'Dirección')
+    token = models.FileField(upload_to="tokens/", blank=True, null=True)
     telefono = models.CharField(default='', max_length=200, verbose_name=u'Telefonos')
     telefono_tics = models.CharField(default='', max_length=200, verbose_name=u'Telefono Tics')
     telwhats = models.CharField(default='', max_length=200, verbose_name=u'Whatsapp')
@@ -1804,8 +1811,11 @@ class Factura(ModeloBase):
     def getpagos(self):
         pagos = []
         for pago_ in self.pagos.filter(status=True):
-            pagos.append([str(self.tipopago), pago_.valortotal])
+            pagos.append([str(CODIGOS_SRI[self.tipopago]), pago_.valortotal])
         return pagos
+
+    def total_sin_impuesto_sri(self):
+        return Decimal(self.subtotalbase0 + self.subtotalbaseiva).quantize(Decimal('.01'))
 
     def save(self, *args, **kwargs):
         self.numerocompleto = self.numerocompleto.upper().strip()
@@ -1827,6 +1837,143 @@ class Factura(ModeloBase):
         self.weburl = uuid.uuid4().hex
         self.xmlgenerado = True
         self.save()
+
+    def firmar_xml_factura(self):
+        try:
+            factura = self
+            token = miempresa().token
+            if not token:
+                return False
+
+            import os
+            java_8_path = "C:/Program Files/Java/jdk-18.0.2.1/bin/java"
+            runjrcommand = [
+                java_8_path,
+                '--add-exports', 'java.xml/com.sun.org.apache.xerces.internal.dom=ALL-UNNAMED',
+                '--add-opens', 'java.xml/com.sun.org.apache.xerces.internal.dom=ALL-UNNAMED',
+                '-cp',
+                classpath,
+                'ec.facturar.SignCLI',  # Reemplaza con la clase principal si es diferente
+                token.file.name,
+                PASSSWORD_SIGNCLI,
+                SERVER_URL_SIGNCLI + "/sign_factura/" + factura.weburl
+            ]
+
+            if SERVER_USER_SIGNCLI:
+                runjrcommand.append(SERVER_USER_SIGNCLI)
+                runjrcommand.append(SERVER_PASS_SIGNCLI)
+            try:
+                result = subprocess.run(runjrcommand, capture_output=True, text=True)
+                print("Comando completo:", runjrcommand)
+                print("Token:", token.file.name)
+                print("Contraseña:", PASSSWORD_SIGNCLI)
+                print("URL de la firma:", SERVER_URL_SIGNCLI + "/sign_factura/" + factura.weburl)
+                if result.returncode != 0:  # Verifica si hubo un error
+                    print("Error al ejecutar el comando. Código de retorno:", result.returncode)
+                    print("Salida del error:", result.stderr)  # Muestra el error capturado
+                    return {"result": False, "mensaje": result.stderr}
+                else:
+                    return {"result": True, "mensaje": result.stderr}
+            except Exception as ex:
+                texto = 'Error ({}) al firmar en la línea: {}'.format(str(ex), sys.exc_info()[-1].tb_lineno)
+                return {"result": False, "mensaje": texto}
+        except Exception as ex:
+            texto = 'Error al procesar los datos {} error en la linea: {}'.format(str(ex), sys.exc_info()[-1].tb_lineno)
+            return {"result": False, "mensaje": texto}
+
+    def enviar_sri(self):
+        try:
+            from administrativo.variablesfirma import ENVIO_SRI_PRUEBAS, ENVIO_SRI_PRODUCCION
+            factura = self
+            xml = factura.xmlfirmado
+            if xml:
+                if factura.tipoambiente == 1:
+                    WSDL = ENVIO_SRI_PRUEBAS
+                else:
+                    WSDL = ENVIO_SRI_PRODUCCION
+                client = Client(WSDL)
+                d = base64.b64encode(factura.xmlfirmado.encode('utf-8'))
+                respuesta = client.service.validarComprobante(factura.xmlfirmado.encode('utf-8'))
+                factura.falloenviarsri = False
+                factura.mensajeenviosri = ''
+                factura.enviadasri = True
+                estado = "RECIBIDA"
+                yaenviado = False
+                if respuesta.comprobantes:
+                    for m in respuesta.comprobantes.comprobante[0].mensajes.mensaje:
+                        if m.identificador == '43' or m.identificador == '45':
+                            yaenviado = True
+                            factura.falloenviarsri = False
+                            factura.mensajeenviosri = ''
+                            factura.enviadasri = True
+                        else:
+                            if unicode(m.mensaje):
+                                factura.mensajeenviosri = unicode(m.mensaje)
+                                factura.falloenviarsri = True
+                                factura.save()
+                            try:
+                                if unicode(m.informacionAdicional):
+                                    factura.mensajeenviosri += ' ' + unicode(m.informacionAdicional)
+                                    factura.save()
+                            except Exception as ex:
+                                pass
+                try:
+                    estado = unicode(respuesta.estado)
+                except Exception as ex:
+                    pass
+                if estado == "RECIBIDA" or yaenviado:
+                    factura.falloenviarsri = False
+                    factura.enviadasri = True
+                    factura.mensajeenviosri = ''
+                    factura.save()
+                    return {"result": True}
+                else:
+                    factura.falloenviarsri = True
+                    factura.estado = 2
+                    factura.save()
+                    return {"result": False, "mensaje": u'1 - Error al enviar el xml al SRI'}
+            else:
+                print("SE ENVÍA A FIRMAR NUEVAMENTE: " + str(factura.id))
+                self.enviar_sri()
+        except Exception as ex:
+            txt_error = 'Error: {} error en la linea: {} {}'.format(str(ex), sys.exc_info()[-1].tb_lineno), str(factura.numerocompleto)
+            return {"result": False, "mensaje": f'1 - Error al enviar el xml al SRI - {txt_error}'}
+
+    def autorizar_sri(self):
+        Text = str
+        factura = self
+        if not factura.enviadasri:
+            return False
+        if factura.tipoambiente == 1:
+            WSDL = AUTORIZACION_SRI_PRUEBAS
+        else:
+            WSDL = AUTORIZACION_SRI_PRODUCCION
+        client = Client(WSDL)
+        respuesta = client.service.autorizacionComprobante(factura.claveacceso)
+        factura.autorizada = False
+        factura.falloautorizarsri = True
+        if respuesta.numeroComprobantes:
+            if int(respuesta.numeroComprobantes) > 0:
+                autorizacion = respuesta.autorizaciones.autorizacion[0]
+                if autorizacion.estado == 'AUTORIZADO':
+                    factura.estado = 2
+                    factura.autorizada = True
+                    factura.falloautorizarsri = False
+                    factura.autorizacion = unicode(
+                        autorizacion.numeroAutorizacion) if autorizacion.estado == 'AUTORIZADO' else ''
+                    factura.fechaautorizacion = autorizacion.fechaAutorizacion
+                    factura.save()
+                    return {"result": True}
+                elif type(autorizacion.mensajes) != Text:
+                    factura.falloautorizarsri = True
+                    factura.estado = 2
+                    for mensaje in autorizacion.mensajes.mensaje:
+                        if unicode(mensaje.mensaje):
+                            factura.mensajeautorizacion = unicode(mensaje.mensaje)
+                        if unicode(mensaje.informacionAdicional):
+                            factura.mensajeautorizacion += ' ' + unicode(mensaje.informacionAdicional)
+                    factura.save()
+                    return {"result": False, "mensaje": u'Error al autorizar en el SRI'}
 
 class Perms(models.Model):
     class Meta:
